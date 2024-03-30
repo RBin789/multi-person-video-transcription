@@ -1,10 +1,37 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <link rel="stylesheet" href="styles.css">
     <title>My Webpage</title>
 </head>
 <body>
-    <h1>Welcome to My Webpage</h1>
+    <h1 style="text-align: center;">Video Analysesd</h1>
     
+    <div class="column-flexbox">
+        <p>The following faces has been identified the video you uploaded.  Please input names for each person</p>
+        <div class="horizontal-flexbox">
+            <div class="column-flexbox">
+                <div class="item">Face</div>
+                <input type="text" id="face1" name="face1"><br><br>
+            </div>
+            <div class="column-flexbox">
+                <div class="item">Face</div>
+                <input type="text" id="face1" name="face1"><br><br>
+            </div>
+            <div class="column-flexbox">
+                <div class="item">Face</div>
+                <input type="text" id="face1" name="face1"><br><br>
+            </div>
+            <div class="column-flexbox">
+                <div class="item">Face</div>
+                <input type="text" id="face1" name="face1"><br><br>
+            </div>
+        </div>
+    </div>
+
+    <div class="horizontal-flexbox" style="justify-content: space-between">
+        <div class="item" onclick="window.location.href = 'index.html';" ><button class="button">Restart</button></div>
+        <div class="item"><button class="button">Get Transcription</button></div>
+    </div>
 </body>
 </html>

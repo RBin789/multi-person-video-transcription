@@ -20,3 +20,22 @@ body {
     margin-top: 20px;
     cursor: pointer;
 }
+
+.column-flexbox {
+    display: flex;
+    flex-direction: column;  /* Establish vertical layout for parent flexbox */
+    height: 300px;  /* Adjust height as needed */
+  }
+  
+  .horizontal-flexbox {
+    display: flex;
+    flex-direction: row;  /* Align child items horizontally */
+    justify-content: space-around;  /* Distribute items evenly with spacing */
+  }
+  
+  .item {
+    background-color: lightblue;
+    padding: 10px;
+    margin: 5px;
+    text-align: center;  /* Optional for item text alignment */
+  }
