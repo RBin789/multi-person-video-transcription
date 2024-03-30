@@ -6,7 +6,12 @@
 </head>
 <body>
     <h1 style="text-align: center;">Upload Video to get Transcription</h1>
+    
+    <form action="upload.php" method="post" enctype="multipart/form-data">
+        <input type="file" name="videoFile" id="videoFile">
+    </form>
 
+    
     
     <button class="button" onclick="window.location.href = 'uploaded.html';">Get Transcription</button>
 </body>
