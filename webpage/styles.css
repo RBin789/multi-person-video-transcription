@@ -34,7 +34,7 @@ body {
   }
   
   .item {
-    background-color: lightblue;
+    /* background-color: lightblue; */
     padding: 10px;
     margin: 5px;
     text-align: center;  /* Optional for item text alignment */
