@@ -4,10 +4,16 @@ import glob
 import cv2
 import dlib
 import numpy as np
+from sklearn.preprocessing import MaxAbsScaler
+
+"""
+This code is used to detect faces in an image and extract the facial keypoints and turn them into vectors
+This code is heavily based on the code from the following link: https://github.com/N2ITN/Face2Vec/tree/master specifically the file identify.py
+"""
 
 class Face2Vec:
     def __init__(self, image):
-        self.img = cv2.imread(image)
+        self.img = cv2.imread(image) # May need to change this to a different method of reading in the image because it will be a frame from a video
         self.processed_image = None
         self.cropped_faces = []
         self.face_keypoints = []
@@ -15,9 +21,14 @@ class Face2Vec:
 
         self.detect_faces()
         self.detect_keypoints()
-        self.show_keypoints()
-        # self.convert_to_vector()
+        self.show_keypoints() # Display the keypoints on the faces.  Comment out if not needed
+        self.convert_to_vectors()
+        self.print_vectors() # Print the number of vectors.  Comment out if not needed
     
+    # def geom(self):
+    #     self.centerPoint = self.keypoints[30]
+    #     self.all_euclidian()
+    #     self.show_keypoints()
 
     def detect_faces(self):
         # Detects faces in the image
@@ -49,50 +60,103 @@ class Face2Vec:
 
         self.cropped_faces.append(self.img[y1:y2, x1:x2])
 
+    
     def detect_keypoints(self):
-        detector = dlib.get_frontal_face_detector()
-        predictor = dlib.shape_predictor("MultiSpeech\FaceDetector\shape_predictor_68_face_landmarks.dat")
-        for face in self.cropped_faces:
-            gray = cv2.cvtColor(face, cv2.COLOR_BGR2GRAY)
-            rects = detector(gray, 0)
-            for rect in rects:
-                shape = predictor(gray, rect)
-                self.face_keypoints.append(shape)
+        """For self.Face_keypoints data is stored in the form [(68 points), (68 points), (68 points)] every entry is a face"""
+
+        face_detector = dlib.get_frontal_face_detector()
+        landmark_predictor = dlib.shape_predictor("MultiSpeech\FaceDetector\shape_predictor_68_face_landmarks.dat")
+        for faceimg in self.cropped_faces:
+            gray = cv2.cvtColor(faceimg, cv2.COLOR_BGR2GRAY)
+            faces = face_detector(gray, 1)
+
+        for face in faces:
+            landmarks_for_face = landmark_predictor(gray, face)
+            landmarks = []
+            for i in range(0, landmarks_for_face.num_parts):
+                x = landmarks_for_face.part(i).x
+                y = landmarks_for_face.part(i).y
+                landmarks.append((x, y))
+            self.face_keypoints.append(landmarks)
 
 
     def show_keypoints(self):
+        """ Shows the first face found with the keypoints drawn on it. """
+
         print("Faces found: " + str(len(self.cropped_faces)))
 
-        # Create a blank canvas to display all the faces
-        canvas = np.zeros((500, 500, 3), dtype=np.uint8)
+        for imgnum in range(len(self.face_keypoints)):
+            for i in range(68):
+                x, y = self.face_keypoints[imgnum][i]
+                cv2.circle(self.cropped_faces[0], (x, y), 1, (0, 0, 255), 2)
 
-        for idx, face in enumerate(self.cropped_faces):
-            for shape in self.face_keypoints:
-                for i in range(68):
-                    x = shape.part(i).x
-                    y = shape.part(i).y
-                    cv2.circle(face, (x, y), 2, (0, 255, 0), -1)
-            
-            # Calculate the position to display the face on the canvas
-            row = idx // 5
-            col = idx % 5
-            x_start = col * 250
-            y_start = row * 250
-            x_end = x_start + 250
-            y_end = y_start + 250
-
-            # Resize the face to fit in the canvas
-            resized_face = cv2.resize(face, (250, 250))
-
-            # Place the resized face on the canvas
-            canvas[y_start:y_end, x_start:x_end] = resized_face
-
-        # Display the canvas with all the faces
-        cv2.imshow('Faces', canvas)
+        cv2.imshow("Image with Landmarks", self.cropped_faces[0])
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
 # -----------------------------------------------------------------------------------------------
 
+    def euc_center(self, keypoints):
+        """ Calculates the Euclidean distance between the center point of the face (defined in geom) and each keypoint """
+        centerPoint = keypoints[30]
 
-# return self.face_vectors
+        euclidian = [self.distance_2D(centerPoint, point) for point in keypoints]
+        euclidian = np.array(euclidian).reshape(-1, 1)
+        norm = MaxAbsScaler().fit_transform(euclidian)
+        self.euclidian = norm # Definition of self.euclidian
+
+    def euc_xy(self, keypoints):
+        """ This function calculates the separate X and Y components of the Euclidean distance between the center point and each keypoint """
+        euclidian1D = []
+        centerPoint = keypoints[30]
+
+        [euclidian1D.append(self.distance_1D(centerPoint, point)) for point in keypoints]
+
+        x, y = [x for x in zip(*euclidian1D)]
+
+        x = np.array(x).reshape(-1, 1)
+        y = np.array(y).reshape(-1, 1)
+        x = MaxAbsScaler().fit_transform(x)
+        y = MaxAbsScaler().fit_transform(y)
+
+        self.euclidianX = x
+        self.euclidianY = y
+
+    def all_euclidian(self, keypoints):
+        """Calculates all the necessary Euclidean distance information and stores it in a tensor """
+        self.euc_xy(keypoints)
+        self.euc_center(keypoints)
+        tensor = np.rot90(np.hstack((self.euclidianX, self.euclidianY, self.euclidian)))
+
+        return tensor
+
+    def distance_1D(self, a, b):
+        """ This function calculates the X and Y distances between two points (a and b) """
+        x1, y1 = a
+        x2, y2 = b
+        x = x1 - x2
+        y = y1 - y2
+        return x, y
+    
+    def distance_2D(self, a, b):
+        """ This function calculates the Euclidean distance between two points (a and b) """
+        x1, y1 = a
+        x2, y2 = b
+        a = np.array((x1, y1))
+        b = np.array((x2, y2))
+        dist = np.linalg.norm(a - b)
+
+        return dist
+    
+    def convert_to_vectors(self):
+        for i in range(len(self.face_keypoints)):
+            for keypoints in self.face_keypoints:
+                tensor = self.all_euclidian(keypoints)
+                self.face_vectors.append(tensor)
+    
+    def get_face_vectors(self):
+        return self.face_vectors
+
+    def print_vectors(self):
+        print(len(self.face_vectors))
+        print(self.face_vectors)
