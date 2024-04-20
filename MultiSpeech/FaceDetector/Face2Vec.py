@@ -76,13 +76,13 @@ class Face2Vec:
             # Calculate the position to display the face on the canvas
             row = idx // 5
             col = idx % 5
-            x_start = col * 100
-            y_start = row * 100
-            x_end = x_start + 100
-            y_end = y_start + 100
+            x_start = col * 250
+            y_start = row * 250
+            x_end = x_start + 250
+            y_end = y_start + 250
 
             # Resize the face to fit in the canvas
-            resized_face = cv2.resize(face, (100, 100))
+            resized_face = cv2.resize(face, (250, 250))
 
             # Place the resized face on the canvas
             canvas[y_start:y_end, x_start:x_end] = resized_face

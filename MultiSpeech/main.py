@@ -4,9 +4,8 @@ from Face2Vec import *
 
 def process_video():
     # Read in the image
-    image_path = "MultiSpeech\FaceDetector\images\istockphoto-1368965646-612x612.jpg"
+    image_path = "MultiSpeech\FaceDetector\images\One+One_frame.png"
     instance = Face2Vec(image_path)
-    # instance.__init__(image)
 
 def main():
     process_video()
