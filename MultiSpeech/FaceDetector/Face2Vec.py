@@ -1,11 +1,11 @@
 import sys
 import os
 import glob
+import time
 import cv2
 import dlib
 import numpy as np
 from sklearn.preprocessing import MaxAbsScaler
-
 
 
 """
@@ -14,9 +14,10 @@ This code is heavily based on the code from the following link: https://github.c
 """
 
 class Face2Vec:
-    def __init__(self, image):
-        self.img = cv2.imread(image) # May need to change this to a different method of reading in the image because it will be a frame from a video
+    def __init__(self, image, current_frame):
+        self.img = image # May need to change this to a different method of reading in the image because it will be a frame from a video
         self.processed_image = None
+        self.current_frame = current_frame
         self.cropped_faces = []
         self.face_keypoints = []
         self.face_vectors = []
@@ -39,7 +40,6 @@ class Face2Vec:
         for (x, y, w, h) in faces:
             self.crop_image(x, y, w, h)
 
-
     def crop_image(self, x, y, w, h):
         # Convert face coordinates to rectangle corner points
         x1, y1 = x, y
@@ -58,7 +58,6 @@ class Face2Vec:
         y2 = max(0, y2)
 
         self.cropped_faces.append(self.img[y1:y2, x1:x2])
-
     
     def detect_keypoints(self):
         """For self.Face_keypoints data is stored in the form [(68 points), (68 points), (68 points)] every entry is a face"""
@@ -69,15 +68,14 @@ class Face2Vec:
             gray = cv2.cvtColor(faceimg, cv2.COLOR_BGR2GRAY)
             faces = face_detector(gray, 1)
 
-        for face in faces:
-            landmarks_for_face = landmark_predictor(gray, face)
-            landmarks = []
-            for i in range(0, landmarks_for_face.num_parts):
-                x = landmarks_for_face.part(i).x
-                y = landmarks_for_face.part(i).y
-                landmarks.append((x, y))
-            self.face_keypoints.append(landmarks)
-
+            for face in faces:
+                landmarks_for_face = landmark_predictor(gray, face)
+                landmarks = []
+                for i in range(0, landmarks_for_face.num_parts):
+                    x = landmarks_for_face.part(i).x
+                    y = landmarks_for_face.part(i).y
+                    landmarks.append((x, y))
+                self.face_keypoints.append(landmarks)
 
     def show_keypoints(self):
         """ Shows the first face found with the keypoints drawn on it. """
@@ -151,7 +149,7 @@ class Face2Vec:
         for i in range(len(self.face_keypoints)):
             for keypoints in self.face_keypoints:
                 tensor = self.all_euclidian(keypoints)
-                self.face_vectors.append(tensor)
+                self.face_vectors.append((tensor, self.current_frame))
     
     def get_face_vectors(self):
         return self.face_vectors
