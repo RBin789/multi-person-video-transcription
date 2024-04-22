@@ -10,7 +10,7 @@ from sklearn.preprocessing import MaxAbsScaler
 
 """
 This code is used to detect faces in an image and extract the facial keypoints and turn them into vectors
-This code is heavily based on the code from the following link: https://github.com/N2ITN/Face2Vec/tree/master specifically the file identify.py
+This code is heavily based on the code from the following link: https://github.com/N2ITN/Face2Vec/tree/master specifically the file identify.py file
 """
 
 class Face2Vec:
@@ -23,9 +23,10 @@ class Face2Vec:
 
         self.detect_faces()
         self.detect_keypoints()
-        self.show_keypoints() # Display the keypoints on the faces.  Comment out if not needed
         self.convert_to_vectors()
-        self.print_vectors() # Print the number of vectors.  Comment out if not needed
+        
+        # self.show_keypoints() # Display the keypoints on the faces.  Comment out if not needed
+        # self.print_vectors() # Print the number of vectors.  Comment out if not needed
 
 
     def detect_faces(self):
