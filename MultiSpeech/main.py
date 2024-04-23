@@ -3,6 +3,8 @@ import time
 import cv2
 sys.path.insert(0, 'MultiSpeech\FaceDetector')
 from FaceDetector.Face2Vec import *
+from FaceDetector.Sequence_Generation import *
+from FaceDetector.GUI import *
 
 all_Face_Vectors = []
 
@@ -41,7 +43,7 @@ def main():
     total_time = time.monotonic()
     video_path = r"C:\Users\dexte\Github-Repositories\multi-person-video-transcription\MultiSpeech\FaceDetector\videos\One_Plus_One_1s_clip.mp4"
     process_video(video_path)
-    # process_image()
+
     print("Number of Face Vectors: ", len(all_Face_Vectors))
     print("Total Time taken: ", time.monotonic() - total_time)
     
