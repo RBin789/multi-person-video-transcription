@@ -14,10 +14,9 @@ This code is heavily based on the code from the following link: https://github.c
 """
 
 class Face2Vec:
-    def __init__(self, image, current_frame):
+    def __init__(self, image, current_frame_num):
         self.img = image # May need to change this to a different method of reading in the image because it will be a frame from a video
-        self.processed_image = None
-        self.current_frame = current_frame
+        self.current_frame_num = current_frame_num
         self.cropped_faces = []
         self.face_keypoints = []
         self.face_vectors = []
@@ -28,7 +27,7 @@ class Face2Vec:
         
         # self.show_keypoints() # Display the keypoints on the faces.  Comment out if not needed
         # self.print_vectors() # Print the number of vectors.  Comment out if not needed
-
+    
 
     def detect_faces(self):
         # Detects faces in the image
@@ -149,7 +148,7 @@ class Face2Vec:
         for i in range(len(self.face_keypoints)):
             for keypoints in self.face_keypoints:
                 tensor = self.all_euclidian(keypoints)
-                self.face_vectors.append((tensor, self.current_frame))
+                self.face_vectors.append((tensor, self.current_frame_num))
     
     def get_face_vectors(self):
         return self.face_vectors
