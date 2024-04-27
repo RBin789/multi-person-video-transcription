@@ -14,9 +14,11 @@ This code is heavily based on the code from the following link: https://github.c
 """
 
 class Face2Vec:
-    def __init__(self, image, current_frame_num):
+    def __init__(self, image, current_frame_num, face_detector, landmark_predictor):
         self.img = image # May need to change this to a different method of reading in the image because it will be a frame from a video
         self.current_frame_num = current_frame_num
+        self.face_detector = face_detector
+        self.landmark_predictor = landmark_predictor
         self.cropped_faces = []
         self.face_keypoints = []
         self.face_vectors = []
@@ -59,22 +61,20 @@ class Face2Vec:
         self.cropped_faces.append(self.img[y1:y2, x1:x2])
     
     def detect_keypoints(self):
-        """For self.Face_keypoints data is stored in the form [(68 points), (68 points), (68 points)] every entry is a face"""
+        """For self.Face_keypoints data is stored in the form [(68 points), (68 points), (68 points)] every entry is a face"""  
 
-        face_detector = dlib.get_frontal_face_detector()
-        landmark_predictor = dlib.shape_predictor("MultiSpeech\FaceDetector\shape_predictor_68_face_landmarks.dat")
         for faceimg in self.cropped_faces:
             gray = cv2.cvtColor(faceimg, cv2.COLOR_BGR2GRAY)
-            faces = face_detector(gray, 1)
+            faces = self.face_detector(gray, 1)
 
             for face in faces:
-                landmarks_for_face = landmark_predictor(gray, face)
+                landmarks_for_face = self.landmark_predictor(gray, face)
                 landmarks = []
                 for i in range(0, landmarks_for_face.num_parts):
                     x = landmarks_for_face.part(i).x
                     y = landmarks_for_face.part(i).y
                     landmarks.append((x, y))
-                self.face_keypoints.append(landmarks)
+                self.face_keypoints.append(landmarks)      
 
     def show_keypoints(self):
         """ Shows the first face found with the keypoints drawn on it. """
