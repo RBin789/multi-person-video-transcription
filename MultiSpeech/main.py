@@ -17,15 +17,15 @@ def process_video(video_path):
         print(f"Video file does not exist: {video_path}")
         exit()
 
-    current_frame = 1
+    current_frame_num = 1
     success, frame = video.read() # Read the first frame
 
     while success:
-        face2vec = Face2Vec(frame, current_frame)
+        face2vec = Face2Vec(frame, current_frame_num)
         face_vectors = face2vec.get_face_vectors()
         all_Face_Vectors.extend(face_vectors)
         success, frame = video.read()
-        current_frame += 1
+        current_frame_num += 1
         print("Frame Processed")
 
     # Release the video file
@@ -41,10 +41,12 @@ def process_image():
 
 def main():
     total_time = time.monotonic()
-    video_path = r"C:\Users\dexte\Github-Repositories\multi-person-video-transcription\MultiSpeech\FaceDetector\videos\One_Plus_One_1s_clip.mp4"
-    process_video(video_path)
+    # video_path = r"C:\Users\dexte\Github-Repositories\multi-person-video-transcription\MultiSpeech\FaceDetector\videos\One_Plus_One_1s_clip.mp4"
+    # process_video(video_path)
+    run_gui() # Run the GUI from GUI.py
 
-    print("Number of Face Vectors: ", len(all_Face_Vectors))
+
+    # print("Number of Face Vectors: ", len(all_Face_Vectors))
     print("Total Time taken: ", time.monotonic() - total_time)
     
     # print(all_Face_Vectors)
