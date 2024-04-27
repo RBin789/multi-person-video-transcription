@@ -51,11 +51,14 @@ def main():
     # process_image()
     # run_gui() # Run the GUI from GUI.py
 
+    # Generate sequences
+    sequence_generation = Sequence_Generation(all_Face_Vectors)
+    person_sequences = sequence_generation.get_person_sequences()
 
     print("Number of Face Vectors: ", len(all_Face_Vectors))
     print("Total Time taken: ", time.monotonic() - total_time)
     
-    # print(all_Face_Vectors)
+    
     
 
 if __name__ == "__main__":
