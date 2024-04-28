@@ -13,6 +13,7 @@ This code is used to detect faces in an image and extract the facial keypoints a
 This code is heavily based on the code from the following link: https://github.com/N2ITN/Face2Vec/tree/master specifically the file identify.py file
 """
 
+
 class Face2Vec:
     def __init__(self, image, current_frame_num, face_detector, landmark_predictor):
         self.img = image # May need to change this to a different method of reading in the image because it will be a frame from a video
