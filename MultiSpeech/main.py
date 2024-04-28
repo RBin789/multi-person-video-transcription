@@ -17,11 +17,13 @@ def process_video(video_path):
         print(f"Video file does not exist: {video_path}")
         exit()
 
+    face_detector = dlib.get_frontal_face_detector()
+    landmark_predictor = dlib.shape_predictor("MultiSpeech\FaceDetector\shape_predictor_68_face_landmarks.dat")
     current_frame_num = 1
     success, frame = video.read() # Read the first frame
 
     while success:
-        face2vec = Face2Vec(frame, current_frame_num)
+        face2vec = Face2Vec(frame, current_frame_num, face_detector, landmark_predictor)
         face_vectors = face2vec.get_face_vectors()
         all_Face_Vectors.extend(face_vectors)
         success, frame = video.read()
@@ -32,24 +34,32 @@ def process_video(video_path):
     video.release()    
 
 def process_image():
+    face_detector = dlib.get_frontal_face_detector()
+    landmark_predictor = dlib.shape_predictor("MultiSpeech\FaceDetector\shape_predictor_68_face_landmarks.dat")
     # Read in the image
     image_path = "MultiSpeech\FaceDetector\images\One+One_frame.png"
-    face2vec = Face2Vec(image_path)
+    image = cv2.imread(image_path)
+    face2vec = Face2Vec(image, 1, face_detector, landmark_predictor)
     face_vectors = face2vec.get_face_vectors()
     all_Face_Vectors.extend(face_vectors)
 
 
 def main():
     total_time = time.monotonic()
-    # video_path = r"C:\Users\dexte\Github-Repositories\multi-person-video-transcription\MultiSpeech\FaceDetector\videos\One_Plus_One_1s_clip.mp4"
-    # process_video(video_path)
-    run_gui() # Run the GUI from GUI.py
+    video_path = r"C:\Users\dexte\Github-Repositories\multi-person-video-transcription\MultiSpeech\FaceDetector\videos\One_Plus_One_1s_clip.mp4"
+    process_video(video_path)
+    # process_image()
+    # run_gui() # Run the GUI
 
+    # Generate sequences
+    # sequence_generation = Sequence_Generation(all_Face_Vectors)
+    # person_sequences = sequence_generation.get_person_sequences()
 
-    # print("Number of Face Vectors: ", len(all_Face_Vectors))
+    print("Number of Face Vectors: ", len(all_Face_Vectors))
+    # print(all_Face_Vectors)
     print("Total Time taken: ", time.monotonic() - total_time)
     
-    # print(all_Face_Vectors)
+    
     
 
 if __name__ == "__main__":

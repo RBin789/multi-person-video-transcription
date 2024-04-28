@@ -29,7 +29,7 @@ def run_gui():
     titleText = Label(centered_frame, text="Convert a video to a transcript", font=("Arial Bold", 20))
     titleText.pack(pady=20)
 
-    descriptionText = Label(centered_frame, text="This tool allows you to convert a video to a transcript.  To get started upload an video.", font=("Arial Bold", 10))
+    descriptionText = Label(centered_frame, text="This tool allows you to convert a video to a transcript.  To get started open an video.", font=("Arial Bold", 10))
     descriptionText.pack(pady=10)
 
     openVideoBtn = Button(centered_frame, text="Open Video", command=BtnOpen_Clicked)
