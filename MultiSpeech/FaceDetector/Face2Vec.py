@@ -105,18 +105,18 @@ class Face2Vec:
 
         if len(self.cropped_faces) != 0: # Only show the keypoints if there are faces found
             for imgnum in range(len(self.face_keypoints)):
-                # x, y = self.face_keypoints[imgnum][61]                            # If you want to see mouth points use this code
-                # cv2.circle(self.cropped_faces[0], (x, y), 1, (0, 0, 255), 2)
-                # x, y = self.face_keypoints[imgnum][67]
-                # cv2.circle(self.cropped_faces[0], (x, y), 1, (0, 0, 255), 2)
-                # x, y = self.face_keypoints[imgnum][62]
-                # cv2.circle(self.cropped_faces[0], (x, y), 1, (0, 0, 255), 2)
-                # x, y = self.face_keypoints[imgnum][66]
-                # cv2.circle(self.cropped_faces[0], (x, y), 1, (0, 0, 255), 2)
-                # x, y = self.face_keypoints[imgnum][63]
-                # cv2.circle(self.cropped_faces[0], (x, y), 1, (0, 0, 255), 2)
-                # x, y = self.face_keypoints[imgnum][65]
-                # cv2.circle(self.cropped_faces[0], (x, y), 1, (0, 0, 255), 2)
+                x, y = self.face_keypoints[imgnum][61]                            # If you want to see mouth points use this code
+                cv2.circle(self.cropped_faces[0], (x, y), 1, (0, 0, 255), 2)
+                x, y = self.face_keypoints[imgnum][67]
+                cv2.circle(self.cropped_faces[0], (x, y), 1, (0, 0, 255), 2)
+                x, y = self.face_keypoints[imgnum][62]
+                cv2.circle(self.cropped_faces[0], (x, y), 1, (0, 0, 255), 2)
+                x, y = self.face_keypoints[imgnum][66]
+                cv2.circle(self.cropped_faces[0], (x, y), 1, (0, 0, 255), 2)
+                x, y = self.face_keypoints[imgnum][63]
+                cv2.circle(self.cropped_faces[0], (x, y), 1, (0, 0, 255), 2)
+                x, y = self.face_keypoints[imgnum][65]
+                cv2.circle(self.cropped_faces[0], (x, y), 1, (0, 0, 255), 2)
                 for i in range(68):                                                 # If you want to see all points use this code
                     x, y = self.face_keypoints[imgnum][i]
                     cv2.circle(self.cropped_faces[0], (x, y), 1, (0, 0, 255), 2)
