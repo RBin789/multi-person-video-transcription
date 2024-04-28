@@ -14,13 +14,18 @@ This code is heavily based on the code from the following link: https://github.c
 """
 
 class Face2Vec:
-    def __init__(self, image, current_frame):
+    def __init__(self, image, current_frame_num, face_detector, landmark_predictor):
         self.img = image # May need to change this to a different method of reading in the image because it will be a frame from a video
-        self.processed_image = None
-        self.current_frame = current_frame
+        self.current_frame_num = current_frame_num
+        self.face_detector = face_detector
+        self.landmark_predictor = landmark_predictor
         self.cropped_faces = []
         self.face_keypoints = []
         self.face_vectors = []
+        self.lip_seperation = []
+
+        if not self.load_shape_predictor("MultiSpeech\FaceDetector\shape_predictor_68_face_landmarks.dat"):
+            return        
 
         self.detect_faces()
         self.detect_keypoints()
@@ -28,7 +33,14 @@ class Face2Vec:
         
         # self.show_keypoints() # Display the keypoints on the faces.  Comment out if not needed
         # self.print_vectors() # Print the number of vectors.  Comment out if not needed
+    
 
+    def load_shape_predictor(self, predictor_path):
+        if not os.path.exists(predictor_path):
+            print(f"Shape predictor file not found: {predictor_path}")
+            return False
+        self.landmark_predictor = dlib.shape_predictor(predictor_path)
+        return True
 
     def detect_faces(self):
         # Detects faces in the image
@@ -59,37 +71,44 @@ class Face2Vec:
 
         self.cropped_faces.append(self.img[y1:y2, x1:x2])
     
-    def detect_keypoints(self):
-        """For self.Face_keypoints data is stored in the form [(68 points), (68 points), (68 points)] every entry is a face"""
 
-        face_detector = dlib.get_frontal_face_detector()
-        landmark_predictor = dlib.shape_predictor("MultiSpeech\FaceDetector\shape_predictor_68_face_landmarks.dat")
+    def calculate_Lip_Seperation(self, keypoints):
+        """Calculates the distance between the top and bottom lip"""
+        point61 = keypoints[61] # To understand the points see the following link: https://github.com/sachinsdate/lip-movement-net/tree/master
+        point67 = keypoints[67]
+        difference1 = abs(point61[1] - point67[1])
+
+        point62 = keypoints[62]
+        point66 = keypoints[66]
+        difference2 = abs(point62[1] - point66[1])
+
+        point63 = keypoints[63]
+        point65 = keypoints[65]
+        difference3 = abs(point63[1] - point65[1])
+
+        avg_distance = (difference1 + difference2 + difference3) / 3
+        return avg_distance
+
+
+    def detect_keypoints(self):
+        """For self.Face_keypoints data is stored in the form [(68 points), (68 points), (68 points)] every entry is a face"""  
+
         for faceimg in self.cropped_faces:
             gray = cv2.cvtColor(faceimg, cv2.COLOR_BGR2GRAY)
-            faces = face_detector(gray, 1)
+            faces = self.face_detector(gray, 1)
 
             for face in faces:
-                landmarks_for_face = landmark_predictor(gray, face)
+                landmarks_for_face = self.landmark_predictor(gray, face)
                 landmarks = []
                 for i in range(0, landmarks_for_face.num_parts):
                     x = landmarks_for_face.part(i).x
                     y = landmarks_for_face.part(i).y
                     landmarks.append((x, y))
-                self.face_keypoints.append(landmarks)
+                self.lip_seperation.append(self.calculate_Lip_Seperation(landmarks))
+                self.face_keypoints.append(landmarks)      
 
     def show_keypoints(self):
-        """ Shows the first face found with the keypoints drawn on it. """
 
-        print("Faces found: " + str(len(self.cropped_faces)))
-
-        for imgnum in range(len(self.face_keypoints)):
-            for i in range(68):
-                x, y = self.face_keypoints[imgnum][i]
-                cv2.circle(self.cropped_faces[0], (x, y), 1, (0, 0, 255), 2)
-
-        cv2.imshow("Image with Landmarks", self.cropped_faces[0])
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
 
 # -----------------------------------------------------------------------------------------------
 
@@ -147,9 +166,9 @@ class Face2Vec:
     
     def convert_to_vectors(self):
         for i in range(len(self.face_keypoints)):
-            for keypoints in self.face_keypoints:
+            for j, keypoints in enumerate(self.face_keypoints):
                 tensor = self.all_euclidian(keypoints)
-                self.face_vectors.append((tensor, self.current_frame))
+                self.face_vectors.append((tensor, self.current_frame_num, self.lip_seperation[j]))
     
     def get_face_vectors(self):
         return self.face_vectors
