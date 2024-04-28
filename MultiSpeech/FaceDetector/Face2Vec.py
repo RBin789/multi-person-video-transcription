@@ -21,6 +21,9 @@ class Face2Vec:
         self.face_keypoints = []
         self.face_vectors = []
 
+        if not self.load_shape_predictor("MultiSpeech\FaceDetector\shape_predictor_68_face_landmarks.dat"):
+            return        
+
         self.detect_faces()
         self.detect_keypoints()
         self.convert_to_vectors()
@@ -28,6 +31,13 @@ class Face2Vec:
         # self.show_keypoints() # Display the keypoints on the faces.  Comment out if not needed
         # self.print_vectors() # Print the number of vectors.  Comment out if not needed
     
+
+    def load_shape_predictor(self, predictor_path):
+        if not os.path.exists(predictor_path):
+            print(f"Shape predictor file not found: {predictor_path}")
+            return False
+        self.landmark_predictor = dlib.shape_predictor(predictor_path)
+        return True
 
     def detect_faces(self):
         # Detects faces in the image
@@ -77,18 +87,18 @@ class Face2Vec:
                 self.face_keypoints.append(landmarks)
 
     def show_keypoints(self):
-        """ Shows the first face found with the keypoints drawn on it. """
-
-        print("Faces found: " + str(len(self.cropped_faces)))
-
-        for imgnum in range(len(self.face_keypoints)):
-            for i in range(68):
-                x, y = self.face_keypoints[imgnum][i]
-                cv2.circle(self.cropped_faces[0], (x, y), 1, (0, 0, 255), 2)
-
-        cv2.imshow("Image with Landmarks", self.cropped_faces[0])
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        try:
+            print("Faces found: " + str(len(self.cropped_faces)))
+            for imgnum in range(len(self.face_keypoints)):
+                for i in range(68):
+                    x, y = self.face_keypoints[imgnum][i]
+                    cv2.circle(self.cropped_faces[0], (x, y), 1, (0, 0, 255), 2)
+            cv2.imshow("Image with Landmarks", self.cropped_faces[0])
+            cv2.waitKey(0)
+        except Exception as e:
+            print(f"Error in showing keypoints: {e}")
+        finally:
+            cv2.destroyAllWindows()
 
 # -----------------------------------------------------------------------------------------------
 
