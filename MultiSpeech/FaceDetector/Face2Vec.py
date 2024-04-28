@@ -22,6 +22,7 @@ class Face2Vec:
         self.cropped_faces = []
         self.face_keypoints = []
         self.face_vectors = []
+        self.lip_seperation = []
 
         self.detect_faces()
         self.detect_keypoints()
@@ -60,6 +61,25 @@ class Face2Vec:
 
         self.cropped_faces.append(self.img[y1:y2, x1:x2])
     
+
+    def calculate_Lip_Seperation(self, keypoints):
+        """Calculates the distance between the top and bottom lip"""
+        point61 = keypoints[61] # To understand the points see the following link: https://github.com/sachinsdate/lip-movement-net/tree/master
+        point67 = keypoints[67]
+        difference1 = abs(point61[1] - point67[1])
+
+        point62 = keypoints[62]
+        point66 = keypoints[66]
+        difference2 = abs(point62[1] - point66[1])
+
+        point63 = keypoints[63]
+        point65 = keypoints[65]
+        difference3 = abs(point63[1] - point65[1])
+
+        avg_distance = (difference1 + difference2 + difference3) / 3
+        return avg_distance
+
+
     def detect_keypoints(self):
         """For self.Face_keypoints data is stored in the form [(68 points), (68 points), (68 points)] every entry is a face"""  
 
@@ -74,6 +94,7 @@ class Face2Vec:
                     x = landmarks_for_face.part(i).x
                     y = landmarks_for_face.part(i).y
                     landmarks.append((x, y))
+                self.lip_seperation.append(self.calculate_Lip_Seperation(landmarks))
                 self.face_keypoints.append(landmarks)      
 
     def show_keypoints(self):
@@ -89,6 +110,7 @@ class Face2Vec:
         cv2.imshow("Image with Landmarks", self.cropped_faces[0])
         cv2.waitKey(0)
         cv2.destroyAllWindows()
+
 
 # -----------------------------------------------------------------------------------------------
 
@@ -146,9 +168,9 @@ class Face2Vec:
     
     def convert_to_vectors(self):
         for i in range(len(self.face_keypoints)):
-            for keypoints in self.face_keypoints:
+            for j, keypoints in enumerate(self.face_keypoints):
                 tensor = self.all_euclidian(keypoints)
-                self.face_vectors.append((tensor, self.current_frame_num))
+                self.face_vectors.append((tensor, self.current_frame_num, self.lip_seperation[j]))
     
     def get_face_vectors(self):
         return self.face_vectors

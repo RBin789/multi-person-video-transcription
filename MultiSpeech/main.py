@@ -49,13 +49,14 @@ def main():
     video_path = r"C:\Users\dexte\Github-Repositories\multi-person-video-transcription\MultiSpeech\FaceDetector\videos\One_Plus_One_1s_clip.mp4"
     process_video(video_path)
     # process_image()
-    # run_gui() # Run the GUI from GUI.py
+    # run_gui() # Run the GUI
 
     # Generate sequences
-    sequence_generation = Sequence_Generation(all_Face_Vectors)
-    person_sequences = sequence_generation.get_person_sequences()
+    # sequence_generation = Sequence_Generation(all_Face_Vectors)
+    # person_sequences = sequence_generation.get_person_sequences()
 
     print("Number of Face Vectors: ", len(all_Face_Vectors))
+    # print(all_Face_Vectors)
     print("Total Time taken: ", time.monotonic() - total_time)
     
     
