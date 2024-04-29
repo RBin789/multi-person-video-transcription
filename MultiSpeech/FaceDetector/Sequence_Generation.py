@@ -2,10 +2,10 @@ class Sequence_Generation:
 
     def __init__(self, person_vectors):
         self.person_vectors = person_vectors
-        self.person_sequences = []
+        self.person_sequences = []  # Final Format of all_Face_Vectors: [[vectors], frame_num, lip_sep]
 
         self.generate_sequences()
-        self.print_sequences()
+        # self.print_sequences()
         
 
     def generate_sequences(self):
