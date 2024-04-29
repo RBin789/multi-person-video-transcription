@@ -2,7 +2,7 @@ class Sequence_Generation:
 
     def __init__(self, person_vectors):
         self.person_vectors = person_vectors
-        self.person_sequences = []  # Final Format of all_Face_Vectors: [[vectors], frame_num, lip_sep]
+        self.person_sequences = []  # Final Format of person_sequences: [[[[vectors], frame_num, lip_sep], [[vectors], frame_num, lip_sep], ...], [[vectors], frame_num, lip_sep], [[vectors], frame_num, lip_sep], ...]] the are frames in order 
 
         self.generate_sequences()
         # self.print_sequences()
@@ -28,6 +28,7 @@ class Sequence_Generation:
                 sequence.append(sequence[-1])
 
     def print_sequences(self):
+        print(self.person_sequences)
         for i, sequence in enumerate(self.person_sequences):
             for j, item in enumerate(sequence):
                 print(str(item[1]) + ", ", end="")

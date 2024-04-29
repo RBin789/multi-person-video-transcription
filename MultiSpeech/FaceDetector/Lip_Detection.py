@@ -23,3 +23,9 @@ class Lip_Detection:
         y_pred = self.model.predict(self.X_data)  # Something like this
 
         print(y_pred)  # Check it's working
+
+
+        '''
+        Mabye make a new data structure to store the lip movement data [first_frame, last_frame, lip_movement]
+        this would be returned for every sequence
+        '''

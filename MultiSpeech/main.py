@@ -47,9 +47,9 @@ def main():
     person_sequences = sequence_generation.get_person_sequences()
 
     # Run the lip detection for each sequence of a person
-    model = load_model("")
-    for i, sequence in enumerate(person_sequences):
-        lip_detection = Lip_Detection(sequence, model)
+    # model = load_model("")
+    # for i, sequence in enumerate(person_sequences):
+    #     lip_detection = Lip_Detection(sequence, model)
 
     print("Number of Face Vectors: ", len(all_Face_Vectors))
     # print(all_Face_Vectors[0])
