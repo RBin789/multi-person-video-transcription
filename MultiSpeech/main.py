@@ -1,6 +1,7 @@
 import sys
 import time
 import cv2
+from keras.models import load_model
 sys.path.insert(0, 'MultiSpeech\FaceDetector')
 from FaceDetector.Face2Vec import *
 from FaceDetector.Sequence_Generation import *
@@ -46,8 +47,9 @@ def main():
     person_sequences = sequence_generation.get_person_sequences()
 
     # Run the lip detection for each sequence of a person
+    model = load_model("")
     for i, sequence in enumerate(person_sequences):
-        lip_detection = Lip_Detection(sequence)
+        lip_detection = Lip_Detection(sequence, model)
 
     print("Number of Face Vectors: ", len(all_Face_Vectors))
     # print(all_Face_Vectors[0])

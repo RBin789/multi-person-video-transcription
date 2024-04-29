@@ -4,8 +4,9 @@ from sklearn.preprocessing import MinMaxScaler
 
 class Lip_Detection:
 
-    def __init__(self, sequence):
+    def __init__(self, sequence, model):
         self.sequence = sequence
+        self.model = model
 
         f = []
         for i, item in enumerate(sequence): # Looping though the sequence which looks like this: [[vectors], frame_num, lip_sep]
@@ -18,5 +19,7 @@ class Lip_Detection:
 
         self.X_data = np.array([arr])
 
-    # def detect_lip_movement(self):
-        # y_pred = self.model.predict(self.X_data)  # Something llike this
+    def detect_lip_movement(self): # the code to look at is line 543 in lip_movement_net.py
+        y_pred = self.model.predict(self.X_data)  # Something like this
+
+        print(y_pred)  # Check it's working
