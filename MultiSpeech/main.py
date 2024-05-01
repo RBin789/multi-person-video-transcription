@@ -1,7 +1,7 @@
 import sys
 import time
 import cv2
-from keras.models import load_model
+from tensorflow.keras.models import load_model
 sys.path.insert(0, 'MultiSpeech\FaceDetector')
 from FaceDetector.Face2Vec import *
 from FaceDetector.Sequence_Generation import *
@@ -38,16 +38,17 @@ def process_video(video_path):
 def main():
     total_time = time.monotonic()
     video_path = r"C:\Users\dexte\Github-Repositories\multi-person-video-transcription\MultiSpeech\FaceDetector\videos\One_Plus_One_1s_clip.mp4"
+    # video_path = r"C:\Users\dexte\Visual Studio Code Projects\DL & CNN Assingment 3\TrainModels\Video datasets\My Data\stock-footage-face-portrait-close-up-beautiful-little-girl-looking-at-the-camera-and-smiling-kindly-furniture.webm"
     process_video(video_path)
     # run_gui() # Run the GUI
 
     # Generate sequences
     # This should run in a for loop for each person in the video
-    sequence_generation = Sequence_Generation(all_Face_Vectors)
-    person_sequences = sequence_generation.get_person_sequences()
+    # sequence_generation = Sequence_Generation(all_Face_Vectors)
+    # person_sequences = sequence_generation.get_person_sequences()
 
     # Run the lip detection for each sequence of a person
-    # model = load_model("")
+    # model = load_model(r"MultiSpeech\FaceDetector\models\1_64_True_True_0.0_lip_motion_net_model.h5")
     # for i, sequence in enumerate(person_sequences):
     #     lip_detection = Lip_Detection(sequence, model)
 
