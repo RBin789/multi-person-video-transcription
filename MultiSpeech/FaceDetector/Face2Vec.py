@@ -24,7 +24,7 @@ class Face2Vec:
         self.face_vectors = []
         self.lip_seperation = []
 
-        self.detect_faces()
+        # self.detect_faces()
         self.detect_keypoints()
         self.convert_to_vectors()
         
@@ -81,21 +81,34 @@ class Face2Vec:
 
 
     def detect_keypoints(self):
-        """For self.Face_keypoints data is stored in the form [(68 points), (68 points), (68 points)] every entry is a face"""  
+        """For self.face_keypoints data is stored in the form [(68 points), (68 points), (68 points)] every entry is a face"""  
 
-        for faceimg in self.cropped_faces:
-            gray = cv2.cvtColor(faceimg, cv2.COLOR_BGR2GRAY)
-            faces = self.face_detector(gray, 1)
+        gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
+        faces = self.face_detector(gray, 2)
 
-            for face in faces:
-                landmarks_for_face = self.landmark_predictor(gray, face)
-                landmarks = []
-                for i in range(0, landmarks_for_face.num_parts):
-                    x = landmarks_for_face.part(i).x
-                    y = landmarks_for_face.part(i).y
-                    landmarks.append((x, y))
-                self.lip_seperation.append(self.calculate_Lip_Seperation(landmarks))
-                self.face_keypoints.append(landmarks)      
+        for face in faces:
+            landmarks_for_face = self.landmark_predictor(gray, face)
+            landmarks = []
+            for i in range(0, landmarks_for_face.num_parts):
+                x = landmarks_for_face.part(i).x
+                y = landmarks_for_face.part(i).y
+                landmarks.append((x, y))
+            self.lip_seperation.append(self.calculate_Lip_Seperation(landmarks))
+            self.face_keypoints.append(landmarks)                 
+
+        # for faceimg in self.cropped_faces:
+        #     gray = cv2.cvtColor(faceimg, cv2.COLOR_BGR2GRAY)
+        #     faces = self.face_detector(gray, 1)
+
+        #     for face in faces:
+        #         landmarks_for_face = self.landmark_predictor(gray, face)
+        #         landmarks = []
+        #         for i in range(0, landmarks_for_face.num_parts):
+        #             x = landmarks_for_face.part(i).x
+        #             y = landmarks_for_face.part(i).y
+        #             landmarks.append((x, y))
+        #         self.lip_seperation.append(self.calculate_Lip_Seperation(landmarks))
+        #         self.face_keypoints.append(landmarks)      
 
     def show_keypoints(self):
         """ Shows the first face found with the keypoints drawn on it. """
