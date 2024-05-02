@@ -54,7 +54,8 @@ def main():
     total_time = time.monotonic()
 
     model = tf.keras.models.load_model("MultiSpeech\FaceDetector\models\model.keras")
-    video_path = r"C:\Users\dexte\Github-Repositories\multi-person-video-transcription\MultiSpeech\FaceDetector\videos\One_Plus_One_1s_clip.mp4"
+    video_path = "MultiSpeech/FaceDetector/videos/One_Plus_One_1s_clip.mp4"
+    # video_path = "MultiSpeech/FaceDetector/videos/One_Plus_One_5s_clip.mp4"
 
     # Process the video
     process_video(video_path)
@@ -63,10 +64,10 @@ def main():
     # run_gui()
 
     # Generate sequences
-    person_sequences = sequence_generation(all_Face_Vectors)
+    # person_sequences = sequence_generation(all_Face_Vectors)
 
     # Run the lip detection for each sequence of a person
-    run_lip_detection(person_sequences, model)
+    # run_lip_detection(person_sequences, model)
 
     print("Number of Face Vectors: ", len(all_Face_Vectors))
     # print(all_Face_Vectors[0])
