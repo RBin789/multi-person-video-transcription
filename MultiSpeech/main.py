@@ -1,8 +1,12 @@
 import sys
 import time
 import cv2
-from tensorflow.keras.models import load_model
+import dlib
 sys.path.insert(0, 'MultiSpeech\FaceDetector')
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Bidirectional, LSTM, Dropout, Dense
 from FaceDetector.Face2Vec import *
 from FaceDetector.Sequence_Generation import *
 from FaceDetector.GUI import *
@@ -44,13 +48,14 @@ def main():
 
     # Generate sequences
     # This should run in a for loop for each person in the video
-    # sequence_generation = Sequence_Generation(all_Face_Vectors)
-    # person_sequences = sequence_generation.get_person_sequences()
+    sequence_generation = Sequence_Generation(all_Face_Vectors)
+    person_sequences = sequence_generation.get_person_sequences()
 
-    # Run the lip detection for each sequence of a person
-    # model = load_model(r"MultiSpeech\FaceDetector\models\1_64_True_True_0.0_lip_motion_net_model.h5")
-    # for i, sequence in enumerate(person_sequences):
-    #     lip_detection = Lip_Detection(sequence, model)
+    model = tf.keras.models.load_model("MultiSpeech\FaceDetector\models\model.keras")
+
+    # # Run the lip detection for each sequence of a person
+    for i, sequence in enumerate(person_sequences):
+        lip_detection = Lip_Detection(sequence, model)
 
     print("Number of Face Vectors: ", len(all_Face_Vectors))
     # print(all_Face_Vectors[0])
@@ -61,5 +66,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
