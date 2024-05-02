@@ -11,7 +11,9 @@ class Sequence_Generation:
     def generate_sequences(self):
         current_sublist = []
         for i, item in enumerate(self.person_vectors):
-
+            if len(current_sublist) == 25:
+                self.person_sequences.append(current_sublist)
+                current_sublist = []
             # Check if it's the first item or the current item is different from the previous one
             if i == 0 or (item[1] - 1) == self.person_vectors[i-1][1]:
                 current_sublist.append(item)

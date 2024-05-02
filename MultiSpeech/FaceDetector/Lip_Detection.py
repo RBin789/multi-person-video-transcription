@@ -8,6 +8,8 @@ class Lip_Detection:
         self.sequence = sequence
         self.model = model
         self.X_data = None
+        self.sequence_and_prediction = []
+
 
         self.prepare_sequences()
         self.detect_lip_movement()
@@ -16,23 +18,17 @@ class Lip_Detection:
     def prepare_sequences(self):
         f = []
         for i, item in enumerate(self.sequence): # Looping though the sequence which looks like this: [[vectors], frame_num, lip_sep]
-            f.append(item[2])
-            # print(item[2]) # Check it's working
-
+            f.append(item[2])  # Append the lip separation value to the list
         f = np.array(f).reshape(-1, 1)  # Reshape the array to 2D
-        self.scalar = MinMaxScaler()
+        self.scalar = MinMaxScaler() 
         arr = self.scalar.fit_transform(f)
-
-        self.X_data = np.array([arr])
+        self.X_data = np.array([arr]) 
 
     def detect_lip_movement(self): # the code to look at is line 543 in lip_movement_net.py
-        print(self.X_data)
-        y_pred = self.model.predict(self.X_data)  # Something like this
+        y_pred = self.model.predict_on_batch(self.X_data)  # Predict the lip movement
+        y_pred_max = y_pred[0].argmax()
+        self.sequence_and_prediction.append([self.sequence[0][1], self.sequence[-1][1], y_pred_max])
 
-        print(y_pred)  # Check it's working
 
 
-        '''
-        Mabye make a new data structure to store the lip movement data [first_frame, last_frame, lip_movement]
-        this would be returned for every sequence
-        '''
+        print("The prediction this sequence is " + str(y_pred_max))
