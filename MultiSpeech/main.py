@@ -5,8 +5,6 @@ import dlib
 sys.path.insert(0, 'MultiSpeech\FaceDetector')
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Bidirectional, LSTM, Dropout, Dense
 from FaceDetector.Face2Vec import *
 from FaceDetector.Sequence_Generation import *
 from FaceDetector.GUI import *
@@ -37,25 +35,35 @@ def process_video(video_path):
         print("Frame Processed")
 
     # Release the video file
-    video.release()    
+    video.release()
+
+def run_gui():
+    app = GUI()
+
+def sequence_generation(face_vectors):
+    # Generate sequences
+    sequence_generation = Sequence_Generation(face_vectors)
+    person_sequences = sequence_generation.get_person_sequences()
+    return person_sequences
+
+def run_lip_detection(person_sequences, model):
+    for i, sequence in enumerate(person_sequences):
+        lip_detection = Lip_Detection(sequence, model)
 
 def main():
     total_time = time.monotonic()
+    model = tf.keras.models.load_model("MultiSpeech\FaceDetector\models\model.keras")
     video_path = r"C:\Users\dexte\Github-Repositories\multi-person-video-transcription\MultiSpeech\FaceDetector\videos\One_Plus_One_1s_clip.mp4"
-    # video_path = r"C:\Users\dexte\Visual Studio Code Projects\DL & CNN Assingment 3\TrainModels\Video datasets\My Data\stock-footage-face-portrait-close-up-beautiful-little-girl-looking-at-the-camera-and-smiling-kindly-furniture.webm"
+
     process_video(video_path)
     # run_gui() # Run the GUI
 
     # Generate sequences
-    # This should run in a for loop for each person in the video
-    sequence_generation = Sequence_Generation(all_Face_Vectors)
-    person_sequences = sequence_generation.get_person_sequences()
+    person_sequences = sequence_generation(all_Face_Vectors)
 
-    model = tf.keras.models.load_model("MultiSpeech\FaceDetector\models\model.keras")
 
     # # Run the lip detection for each sequence of a person
-    for i, sequence in enumerate(person_sequences):
-        lip_detection = Lip_Detection(sequence, model)
+    run_lip_detection(person_sequences, model)
 
     print("Number of Face Vectors: ", len(all_Face_Vectors))
     # print(all_Face_Vectors[0])
