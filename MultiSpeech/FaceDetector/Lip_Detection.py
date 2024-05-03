@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 
 
-class Lip_Detection:
+class Lip_Detection:  # This class takes in 25 values of lip separation and predicts the lip movement
 
     def __init__(self, sequence, model):
         self.sequence = sequence

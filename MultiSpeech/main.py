@@ -63,13 +63,25 @@ def peform_kmeans_clustering(all_Face_Vectors, num_people):
     for item, label in zip(all_Face_Vectors, cluster_labels):
         clustered_data.append([item[0], item[1], item[2], label])
 
-    # Print the clustered data
-    # print(clustered_data[0])
-    # print(clustered_data[0][3])
+    return clustered_data
 
+def split_data_by_cluster(clustered_data):
+    clustered_by_label = {}
+    for item in clustered_data:
+        cluster_label = item[3]  # Access the cluster label from the 4th element
+        if cluster_label not in clustered_by_label:
+            clustered_by_label[cluster_label] = []
+        clustered_by_label[cluster_label].append(item)
+    return clustered_by_label # A dictionary where keys are cluster labels and values are lists of data points belonging to that cluster.
 
 def run_gui():
     app = GUI()
+
+def process_clustered_data(clustered_by_label, model):
+    for cluster_label, cluster_data in clustered_by_label.items():
+        person_sequences = sequence_generation(cluster_data) # all of one persons sequences
+        run_lip_detection(person_sequences, model)
+
 
 def sequence_generation(face_vectors):
     # Generate sequences
@@ -78,7 +90,7 @@ def sequence_generation(face_vectors):
     return person_sequences
 
 def run_lip_detection(person_sequences, model):
-    for i, sequence in enumerate(person_sequences):
+    for i, sequence in enumerate(person_sequences): # Loops though every sequence of a person
         lip_detection = Lip_Detection(sequence, model)
 
 def main():
@@ -88,21 +100,20 @@ def main():
     # video_path = "MultiSpeech/FaceDetector/videos/One_Plus_One_1s_clip.mp4"
     video_path = "MultiSpeech/FaceDetector/videos/One_Plus_One_1s_clip.mp4"
 
+    # Run the GUI
+    # run_gui()
+
     # Process the video
     process_video(video_path)
 
     # K-means clustering on face vectors
     num_people = int(input("Enter the number of people in the video: "))
-    peform_kmeans_clustering(all_Face_Vectors, num_people)
+    clustered_data = peform_kmeans_clustering(all_Face_Vectors, num_people)
+    clustered_by_label = split_data_by_cluster(clustered_data)
 
-    # Run the GUI
-    # run_gui()
+    # Generate sequences for each person and run lip detection
+    process_clustered_data(clustered_by_label, model)
 
-    # Generate sequences
-    # person_sequences = sequence_generation(all_Face_Vectors)
-
-    # Run the lip detection for each sequence of a person
-    # run_lip_detection(person_sequences, model)
 
     print("Number of Face Vectors: ", len(all_Face_Vectors))
     # print(all_Face_Vectors[0])
