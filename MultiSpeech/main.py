@@ -2,6 +2,9 @@ import sys
 import time
 import cv2
 import dlib
+import numpy as np
+from sklearn.cluster import KMeans
+import matplotlib.pyplot as plt
 sys.path.insert(0, 'MultiSpeech\FaceDetector')
 import tensorflow as tf
 from tensorflow import keras
@@ -37,6 +40,34 @@ def process_video(video_path):
     # Release the video file
     video.release()
 
+def peform_kmeans_clustering(all_Face_Vectors, num_people):
+    # Extract vectors from the list
+    vectors = [face_vector[0].flatten() for face_vector in all_Face_Vectors]
+
+    # Convert the list of vectors to a NumPy array
+    vector_array = np.array(vectors)
+
+    # Create the KMeans model
+    kmeans = KMeans(n_clusters=num_people)
+
+    # Fit the model to the data (vectors only)
+    kmeans.fit(vector_array)
+
+    # Get the cluster labels for each vector
+    cluster_labels = kmeans.labels_
+
+    # Create a new list to store clustered data
+    clustered_data = []
+
+    # Assign cluster labels and preserve structure
+    for item, label in zip(all_Face_Vectors, cluster_labels):
+        clustered_data.append([item[0], item[1], item[2], label])
+
+    # Print the clustered data
+    # print(clustered_data[0])
+    # print(clustered_data[0][3])
+
+
 def run_gui():
     app = GUI()
 
@@ -55,19 +86,23 @@ def main():
 
     model = tf.keras.models.load_model("MultiSpeech\FaceDetector\models\model.keras")
     # video_path = "MultiSpeech/FaceDetector/videos/One_Plus_One_1s_clip.mp4"
-    video_path = "MultiSpeech/FaceDetector/videos/One_Plus_One_5s_clip.mp4"
+    video_path = "MultiSpeech/FaceDetector/videos/One_Plus_One_1s_clip.mp4"
 
     # Process the video
     process_video(video_path)
+
+    # K-means clustering on face vectors
+    num_people = int(input("Enter the number of people in the video: "))
+    peform_kmeans_clustering(all_Face_Vectors, num_people)
 
     # Run the GUI
     # run_gui()
 
     # Generate sequences
-    person_sequences = sequence_generation(all_Face_Vectors)
+    # person_sequences = sequence_generation(all_Face_Vectors)
 
     # Run the lip detection for each sequence of a person
-    run_lip_detection(person_sequences, model)
+    # run_lip_detection(person_sequences, model)
 
     print("Number of Face Vectors: ", len(all_Face_Vectors))
     # print(all_Face_Vectors[0])
