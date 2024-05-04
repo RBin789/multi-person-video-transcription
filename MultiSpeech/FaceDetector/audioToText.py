@@ -7,7 +7,6 @@ def audio_to_text(audio_file_path):
     
     with sr.AudioFile(audio_file_path) as source:
         audio_data = recognizer.record(source)  
-    
     try:
         text = recognizer.recognize_google(audio_data, language='en-US')  
         return text
@@ -15,6 +14,23 @@ def audio_to_text(audio_file_path):
         return "Could not understand the audio."
     except sr.RequestError as e:
         return f"Could not access Google Speech Recognition service: {e}"
+
+def find_audio_start_frame(video_clip, threshold=0.01):
+    """Find the frame number where audio starts based on a threshold."""
+    audio = video_clip.audio
+    # Convert the audio waveform to an array where each value represents the amplitude at that time
+    # fps is the frames per second of the audio, which may be different from the video fps
+    fps = audio.fps
+    audio_waveform = audio.to_soundarray(fps=fps)
+
+    # Calculate the magnitude of the audio waveform (stereo or mono)
+    magnitudes = (audio_waveform**2).sum(axis=1)**0.5
+
+    # Find the first frame where the magnitude exceeds the threshold
+    for i, magnitude in enumerate(magnitudes):
+        if magnitude > threshold:
+            return int(i / fps * video_clip.fps)  # Convert audio frame index to video frame index
+    return None
 
 if __name__ == "__main__":
     project_root = os.path.dirname(os.path.abspath(__file__)) 
