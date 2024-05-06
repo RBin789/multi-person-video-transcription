@@ -1,0 +1,5 @@
+Optional - Create new conda environment
+pip install ultralytics
+
+**Run this on CLI 
+yolo detect train data=./datasets/data.yaml  model=yolov8n.yaml epochs=100 imgsz=640
