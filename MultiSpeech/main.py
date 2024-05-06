@@ -120,7 +120,7 @@ class GUI:
         titleText = Label(centered_frame, text="Convert a video to a transcript", font=("Arial Bold", 20))
         titleText.pack(pady=20)
 
-        descriptionText = Label(centered_frame, text="This tool allows you to convert a video to a transcript. To get started open an video and enter a number.", font=("Arial Bold", 10))
+        descriptionText = Label(centered_frame, text="This tool allows you to convert a video to a transcript. To get started press the open video button.", font=("Arial Bold", 10))
         descriptionText.pack(pady=10)
 
         # Button to Open Video
@@ -128,7 +128,7 @@ class GUI:
         openVideoBtn.pack(pady=10)
 
         # Label for number of people
-        peopleInputLabel = Label(centered_frame, text="Enter the amount of people who appear in the video:", font=("Arial Bold", 10))
+        peopleInputLabel = Label(centered_frame, text="Enter the amount of unique people who appear in the video:", font=("Arial Bold", 10))
         peopleInputLabel.pack(pady=10)
 
         # Text box for user input
@@ -139,6 +139,10 @@ class GUI:
         # Start Button (initially disabled)
         self.startButton = Button(centered_frame, text="Start", state=DISABLED, command=self.BtnStart_Clicked)
         self.startButton.pack(pady=10)
+
+        # Cancel Button
+        cancelButton = Button(centered_frame, text="Cancel", command=self.BtnCancel_Clicked)
+        cancelButton.pack(pady=10)
 
         # Calling the mainloop()
         self.MyWindow.mainloop()
@@ -160,23 +164,27 @@ class GUI:
         number = self.numberEntry.get()
         print(f"Processing video with num people being: {number}")
 
-        # Process the video
-        process_video(self.selected_file)
+        # # Process the video
+        # process_video(self.selected_file)
 
-        # Process Audio
-        # audiototext = audioToText(selected_file)
+        # # Process Audio
+        # # audiototext = audioToText(selected_file)
 
-        # K-means clustering on face vectors
-        num_people = int(input("Enter the number of people in the video: "))
-        clustered_data = peform_kmeans_clustering(all_Face_Vectors, num_people)
-        clustered_by_label = split_data_by_cluster(clustered_data)
+        # # K-means clustering on face vectors
+        # num_people = int(input("Enter the number of people in the video: "))
+        # clustered_data = peform_kmeans_clustering(all_Face_Vectors, num_people)
+        # clustered_by_label = split_data_by_cluster(clustered_data)
 
-        # Generate sequences for each person and run lip detection
-        process_clustered_data(clustered_by_label, model)
+        # # Generate sequences for each person and run lip detection
+        # process_clustered_data(clustered_by_label, model)
 
         # Placeholder message after processing
         messagebox.showinfo("Finished", "The video transcription has been completed. \n The transcript is saved in the same directory as the video file.", parent=self.MyWindow)
         self.MyWindow.destroy()  # Close the main window
+    
+    def BtnCancel_Clicked(self):
+        # Close both windows
+        self.MyWindow.destroy()
 
 
 # ---------------------------------------------------------------------------------------------------------------------------
