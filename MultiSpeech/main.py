@@ -12,6 +12,7 @@ from FaceDetector.Face2Vec import *
 from FaceDetector.Sequence_Generation import *
 from FaceDetector.GUI import *
 from FaceDetector.Lip_Detection import *
+from FaceDetector.audioToText import *
 
 all_Face_Vectors = []
 
@@ -105,6 +106,9 @@ def main():
 
     # Process the video
     process_video(video_path)
+
+    # Process Audio
+    audiototext = audioToText(video_path)
 
     # K-means clustering on face vectors
     num_people = int(input("Enter the number of people in the video: "))
