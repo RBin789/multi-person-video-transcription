@@ -5,16 +5,21 @@ import dlib
 import numpy as np
 from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
+from tkinter import *
+from tkinter import messagebox
+from tkinter import filedialog
 sys.path.insert(0, 'MultiSpeech\FaceDetector')
 import tensorflow as tf
 from tensorflow import keras
 from FaceDetector.Face2Vec import *
 from FaceDetector.Sequence_Generation import *
-from FaceDetector.GUI import *
 from FaceDetector.Lip_Detection import *
-from FaceDetector.audioToText import *
+# from FaceDetector.audioToText import *
 
 all_Face_Vectors = []
+selected_file = None  # Initialize variable to store video path
+model = tf.keras.models.load_model("MultiSpeech\FaceDetector\models\model.keras")
+
 
 def process_video(video_path):
     # Open the video file
@@ -94,32 +99,94 @@ def run_lip_detection(person_sequences, model):
     for i, sequence in enumerate(person_sequences): # Loops though every sequence of a person
         lip_detection = Lip_Detection(sequence, model)
 
+class GUI:
+
+    def __init__(self):
+        self.run_gui()
+        self.selected_file = None  # Initialize variable to store video path
+
+    def run_gui(self):
+
+        # Create a Window.
+        self.MyWindow = Tk()  # Create a window
+        self.MyWindow.title("Multi Person Video Transcription")  # Change the Title of the GUI
+        self.MyWindow.geometry('800x400')  # Set the size of the Windows
+
+        # Create a new frame
+        centered_frame = Frame(self.MyWindow, height=self.MyWindow.winfo_screenheight())
+        centered_frame.pack(pady=(self.MyWindow.winfo_screenheight() - centered_frame.winfo_reqheight()) // 2)
+
+        # Create GUI elements
+        titleText = Label(centered_frame, text="Convert a video to a transcript", font=("Arial Bold", 20))
+        titleText.pack(pady=20)
+
+        descriptionText = Label(centered_frame, text="This tool allows you to convert a video to a transcript. To get started open an video and enter a number.", font=("Arial Bold", 10))
+        descriptionText.pack(pady=10)
+
+        # Button to Open Video
+        openVideoBtn = Button(centered_frame, text="Open Video", command=self.BtnOpen_Clicked)
+        openVideoBtn.pack(pady=10)
+
+        # Label for number of people
+        peopleInputLabel = Label(centered_frame, text="Enter the amount of people who appear in the video:", font=("Arial Bold", 10))
+        peopleInputLabel.pack(pady=10)
+
+        # Text box for user input
+        self.numberEntry = Entry(centered_frame, width=20)  # Create entry widget for number input
+        self.numberEntry.pack(pady=10)
+        self.numberEntry.insert(0, "")  # Set initial text in the entry
+
+        # Start Button (initially disabled)
+        self.startButton = Button(centered_frame, text="Start", state=DISABLED, command=self.BtnStart_Clicked)
+        self.startButton.pack(pady=10)
+
+        # Calling the mainloop()
+        self.MyWindow.mainloop()
+
+    def BtnOpen_Clicked(self):
+        # Specify video file types
+        filetypes = [("Video files", "*.mp4")]
+
+        file_path = filedialog.askopenfilename(filetypes=filetypes)
+        print(file_path)
+
+        if file_path:  # Check if a file was selected
+            self.selected_file = file_path
+            self.startButton.config(state=NORMAL)  # Enable Start button after selecting video
+
+    def BtnStart_Clicked(self):
+        # Placeholder for video processing logic
+        # Access the entered number using self.numberEntry.get()
+        number = self.numberEntry.get()
+        print(f"Processing video with num people being: {number}")
+
+        # Process the video
+        process_video(self.selected_file)
+
+        # Process Audio
+        # audiototext = audioToText(selected_file)
+
+        # K-means clustering on face vectors
+        num_people = int(input("Enter the number of people in the video: "))
+        clustered_data = peform_kmeans_clustering(all_Face_Vectors, num_people)
+        clustered_by_label = split_data_by_cluster(clustered_data)
+
+        # Generate sequences for each person and run lip detection
+        process_clustered_data(clustered_by_label, model)
+
+        # Placeholder message after processing
+        messagebox.showinfo("Finished", "The video transcription has been completed. \n The transcript is saved in the same directory as the video file.", parent=self.MyWindow)
+        self.MyWindow.destroy()  # Close the main window
+
+
+# ---------------------------------------------------------------------------------------------------------------------------
+
 def main():
     total_time = time.monotonic()
 
-    model = tf.keras.models.load_model("MultiSpeech\FaceDetector\models\model.keras")
-    # video_path = "MultiSpeech/FaceDetector/videos/One_Plus_One_1s_clip.mp4"
-    video_path = "MultiSpeech/FaceDetector/videos/One_Plus_One_1s_clip.mp4"
+    gui = GUI()
 
-    # Run the GUI
-    # run_gui()
-
-    # Process the video
-    process_video(video_path)
-
-    # Process Audio
-    audiototext = audioToText(video_path)
-
-    # K-means clustering on face vectors
-    num_people = int(input("Enter the number of people in the video: "))
-    clustered_data = peform_kmeans_clustering(all_Face_Vectors, num_people)
-    clustered_by_label = split_data_by_cluster(clustered_data)
-
-    # Generate sequences for each person and run lip detection
-    process_clustered_data(clustered_by_label, model)
-
-
-    print("Number of Face Vectors: ", len(all_Face_Vectors))
+    # print("Number of Face Vectors: ", len(all_Face_Vectors))
     # print(all_Face_Vectors[0])
     print("Total Time taken: ", time.monotonic() - total_time)
     
