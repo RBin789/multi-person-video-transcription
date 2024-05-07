@@ -14,7 +14,7 @@ from tensorflow import keras
 from FaceDetector.Face2Vec import *
 from FaceDetector.Sequence_Generation import *
 from FaceDetector.Lip_Detection import *
-# from FaceDetector.audioToText import *
+from FaceDetector.audioToText import *
 
 all_Face_Vectors = []
 selected_file = None  # Initialize variable to store video path
@@ -86,7 +86,7 @@ def run_gui():
 def process_clustered_data(clustered_by_label, model):
     for cluster_label, cluster_data in clustered_by_label.items():
         person_sequences = sequence_generation(cluster_data) # all of one persons sequences
-        run_lip_detection(person_sequences, model)
+        run_lip_detection(person_sequences, cluster_label, model)
 
 
 def sequence_generation(face_vectors):
@@ -95,9 +95,9 @@ def sequence_generation(face_vectors):
     person_sequences = sequence_generation.get_person_sequences()
     return person_sequences
 
-def run_lip_detection(person_sequences, model):
+def run_lip_detection(person_sequences, cluster_label, model):
     for i, sequence in enumerate(person_sequences): # Loops though every sequence of a person
-        lip_detection = Lip_Detection(sequence, model)
+        lip_detection = Lip_Detection(sequence, cluster_label, model)
 
 class GUI:
 
@@ -159,26 +159,24 @@ class GUI:
             self.startButton.config(state=NORMAL)  # Enable Start button after selecting video
 
     def BtnStart_Clicked(self):
-        # Placeholder for video processing logic
         # Access the entered number using self.numberEntry.get()
-        number = self.numberEntry.get()
-        print(f"Processing video with num people being: {number}")
+        number_people = self.numberEntry.get()
+        print(f"Processing video with num people being: {number_people}")
 
         # # Process the video
         # process_video(self.selected_file)
 
-        # # Process Audio
-        # # audiototext = audioToText(selected_file)
+        # Process Audio
+        # audiototext = audioToText(self.selected_file)
 
         # # K-means clustering on face vectors
-        # num_people = int(input("Enter the number of people in the video: "))
         # clustered_data = peform_kmeans_clustering(all_Face_Vectors, num_people)
         # clustered_by_label = split_data_by_cluster(clustered_data)
 
         # # Generate sequences for each person and run lip detection
         # process_clustered_data(clustered_by_label, model)
 
-        # Placeholder message after processing
+        # Message after processing
         messagebox.showinfo("Finished", "The video transcription has been completed. \n The transcript is saved in the same directory as the video file.", parent=self.MyWindow)
         self.MyWindow.destroy()  # Close the main window
     
