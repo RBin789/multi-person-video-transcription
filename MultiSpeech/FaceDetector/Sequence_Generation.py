@@ -27,10 +27,12 @@ class Sequence_Generation:
         # Append the last sublist if it has any elements
         if current_sublist:
             self.person_sequences.append(current_sublist)
+            current_sublist = []
         
         for sequence in self.person_sequences: # Add extra fake frames to the sequence so that all sequences have a length of 25
-            while len(sequence) < 25:
-                sequence.append(sequence[-1])
+            if len(sequence) > 10:
+                while len(sequence) < 25:
+                    sequence.append(sequence[-1])
 
 
     def print_sequences(self):
