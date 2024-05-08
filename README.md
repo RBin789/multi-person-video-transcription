@@ -10,3 +10,4 @@ pip install numpy
 pip install keras
 pip install ultralytics
 pip install scikit-learn
+pip install moviepy
