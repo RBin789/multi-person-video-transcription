@@ -19,7 +19,7 @@ from FaceDetector.audioToText import *
 all_Face_Vectors = []
 all_Sequences = []
 selected_file = None  # Initialize variable to store video path
-model = tf.keras.models.load_model("MultiSpeech\FaceDetector\models\model.keras")
+lip_detection_model = tf.keras.models.load_model("MultiSpeech\FaceDetector\models\model.keras")
 
 
 def process_video(video_path):
@@ -179,7 +179,7 @@ class GUI:
         clustered_by_label = split_data_by_cluster(clustered_data)
 
         # Generate sequences for each person and run lip detection
-        process_clustered_data(clustered_by_label, model)
+        process_clustered_data(clustered_by_label, lip_detection_model)
 
         print("All Sequences unsorted: ", all_Sequences)
         # Sort all_Sequences by frame numbers
