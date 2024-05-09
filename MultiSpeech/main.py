@@ -15,14 +15,17 @@ from FaceDetector.Face2Vec import *
 from FaceDetector.Sequence_Generation import *
 from FaceDetector.Lip_Detection import *
 from FaceDetector.audioToText import *
-
+from ultralytics import YOLO
 all_Face_Vectors = []
 all_Sequences = []
 selected_file = None  # Initialize variable to store video path
-lip_detection_model = tf.keras.models.load_model("MultiSpeech\FaceDetector\models\model.keras")
+lip_detection_model = tf.keras.models.load_model("MultiSpeech/FaceDetector/models/model.keras")
 
 
 def process_video(video_path):
+
+    #load the Face Detector model 
+    face_model = YOLO("MultiSpeech/FaceDetector/models/best.pt")
     # Open the video file
     video = cv2.VideoCapture(video_path)
 
@@ -32,18 +35,24 @@ def process_video(video_path):
         exit()
 
     face_detector = dlib.get_frontal_face_detector()
-    landmark_predictor = dlib.shape_predictor("MultiSpeech\FaceDetector\shape_predictor_68_face_landmarks.dat")
+    landmark_predictor = dlib.shape_predictor("MultiSpeech/FaceDetector/shape_predictor_68_face_landmarks.dat")
     current_frame_num = 1
     success, frame = video.read() # Read the first frame
 
     while success:
+        results = face_model(frame)
+        
+        for r in results:
+            
+            xywh = r.boxes.xywh[0]
+            print(xywh) #outputs the XYWH of the bounding boxes
+        
         face2vec = Face2Vec(frame, current_frame_num, face_detector, landmark_predictor)
         face_vectors = face2vec.get_face_vectors()
         all_Face_Vectors.extend(face_vectors)  # Final Format of all_Face_Vectors: [[vectors], frame_num, lip_sep]
         success, frame = video.read()
         current_frame_num += 1
         print("Frame Processed")
-
     # Release the video file
     video.release()
 
