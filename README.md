@@ -4,7 +4,7 @@
 
 ```bash
 pip install glob
-pip install cv2
+pip install opencv-python
 pip install dlib
 pip install numpy
 pip install keras
