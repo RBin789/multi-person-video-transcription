@@ -16,6 +16,7 @@ from FaceDetector.Sequence_Generation import *
 from FaceDetector.Lip_Detection import *
 from FaceDetector.audioToText import *
 from ultralytics import YOLO
+
 all_Face_Vectors = []
 all_Sequences = []
 selected_file = None  # Initialize variable to store video path
@@ -24,8 +25,6 @@ lip_detection_model = tf.keras.models.load_model("MultiSpeech/FaceDetector/model
 
 def process_video(video_path):
 
-    #load the Face Detector model 
-    face_model = YOLO("MultiSpeech/FaceDetector/models/best.pt")
     # Open the video file
     video = cv2.VideoCapture(video_path)
 
@@ -36,18 +35,13 @@ def process_video(video_path):
 
     face_detector = dlib.get_frontal_face_detector()
     landmark_predictor = dlib.shape_predictor("MultiSpeech/FaceDetector/shape_predictor_68_face_landmarks.dat")
+    yolo_model = YOLO("MultiSpeech/FaceDetector/models/best.pt")
     current_frame_num = 1
     success, frame = video.read() # Read the first frame
 
     while success:
-        results = face_model(frame)
         
-        for r in results:
-            
-            xywh = r.boxes.xywh[0]
-            print(xywh) #outputs the XYWH of the bounding boxes
-        
-        face2vec = Face2Vec(frame, current_frame_num, face_detector, landmark_predictor)
+        face2vec = Face2Vec(frame, current_frame_num, face_detector, landmark_predictor, yolo_model)
         face_vectors = face2vec.get_face_vectors()
         all_Face_Vectors.extend(face_vectors)  # Final Format of all_Face_Vectors: [[vectors], frame_num, lip_sep]
         success, frame = video.read()
@@ -95,12 +89,12 @@ def run_gui():
 
 def process_clustered_data(clustered_by_label, model):
     for cluster_label, cluster_data in clustered_by_label.items():
-        person_sequences = sequence_generation(cluster_data) # all of one persons sequences
+        person_sequences = sequence_generation(cluster_label, cluster_data) # all of one persons sequences
         run_lip_detection(person_sequences, cluster_label, model)
 
-def sequence_generation(face_vectors):
+def sequence_generation(face_vectors, cluster_label):
     # Generate sequences
-    sequence_generation = Sequence_Generation(face_vectors)
+    sequence_generation = Sequence_Generation(face_vectors, cluster_label)
     person_sequences = sequence_generation.get_person_sequences()
     return person_sequences
 
@@ -193,7 +187,7 @@ class GUI:
         print("All Sequences unsorted: ", all_Sequences)
         # Sort all_Sequences by frame numbers
         sort_Detected_Sequences(all_Sequences)
-
+        
         print("All Sequences sorted: ", all_Sequences)
 
         # Message after processing
@@ -208,13 +202,13 @@ class GUI:
 # ---------------------------------------------------------------------------------------------------------------------------
 
 def main():
-    total_time = time.monotonic()
+    # total_time = time.monotonic()
 
     gui = GUI()
 
     # print("Number of Face Vectors: ", len(all_Face_Vectors))
     # print(all_Face_Vectors[0])
-    print("Total Time taken: ", time.monotonic() - total_time)
+    # print("Total Time taken: ", time.monotonic() - total_time)
     
     
     

@@ -14,17 +14,18 @@ This code is heavily based on the code from the following link: https://github.c
 """
 
 class Face2Vec:
-    def __init__(self, image, current_frame_num, face_detector, landmark_predictor):
-        self.img = image # May need to change this to a different method of reading in the image because it will be a frame from a video
+    def __init__(self, frame, current_frame_num, face_detector, landmark_predictor, yolo_model):
+        self.img = frame
         self.current_frame_num = current_frame_num
         self.face_detector = face_detector
         self.landmark_predictor = landmark_predictor
-        self.cropped_faces = []
+        self.yolo_model = yolo_model
+        self.heads = []
         self.face_keypoints = []
         self.face_vectors = []
         self.lip_seperation = []
 
-        # self.detect_faces()
+        self.detect_faces()
         self.detect_keypoints()
         self.convert_to_vectors()
         
@@ -35,23 +36,35 @@ class Face2Vec:
     def detect_faces(self):
         # Detects faces in the image
         # Might be changed to a more accurate model just simple for now
-        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-        gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
-        faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+        faces = []
+
+        results = self.yolo_model(self.img)
         
-        for (x, y, w, h) in faces:
-            self.crop_image(x, y, w, h)
+        # Display the results
+        for result in results:
+            boxes = result.boxes.cpu().numpy()
+            # x1, y1, x2, y2 = box[0]
+            xyxys = boxes.xyxy
+            for xyxy in xyxys:
+                x1, y1, x2, y2 = xyxy
+                # cv2.rectangle(self.img, (int(x1), int(y1)), (int(x2), int(y2)), (0, 0, 255), 2)
+                # cv2.imshow('image', np.array(self.img))
+                # cv2.waitKey(0)
 
-    def crop_image(self, x, y, w, h):
+                faces.append((int(x1), int(y1), int(x2), int(y2)))
+        
+        for (x1, y1, x2, y2) in faces:
+            self.crop_image(x1, y1, x2, y2)
+
+    def crop_image(self, x1, y1, x2, y2):
         # Convert face coordinates to rectangle corner points
-        x1, y1 = x, y
-        x2, y2 = x + w, y + h
-        grow = h / 7
+        growx = (x2 - x1)/8
+        growy = (y2 - y1)/8
 
-        x1 = int(x1 - grow)
-        x2 = int(x2 + grow)
-        y1 = int(y1 - grow)
-        y2 = int(y2 + grow)
+        x1 = int(x1 - growx)
+        x2 = int(x2 + growx)
+        y1 = int(y1 - growy)
+        y2 = int(y2 + growy)
 
         # Set negative values to 0
         x1 = max(0, x1)
@@ -59,7 +72,8 @@ class Face2Vec:
         y1 = max(0, y1)
         y2 = max(0, y2)
 
-        self.cropped_faces.append(self.img[y1:y2, x1:x2])
+
+        self.heads.append(self.img[y1:y2, x1:x2])
     
 
     def calculate_Lip_Seperation(self, keypoints):
@@ -83,10 +97,18 @@ class Face2Vec:
     def detect_keypoints(self):
         """For self.face_keypoints data is stored in the form [(68 points), (68 points), (68 points)] every entry is a face"""  
 
-        for faceimg in self.cropped_faces:
-            gray = cv2.cvtColor(faceimg, cv2.COLOR_BGR2GRAY)
+        for i, image in enumerate(self.heads):
+            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             faces = self.face_detector(gray, 1)
-
+            
+          
+            if len(faces) == 0:
+                # print("Faces found 2: " + str(len(faces)))
+                self.face_keypoints.append([])
+                self.lip_seperation.append([])
+                # print(len(self.face_keypoints[-1]))
+                # self.heads.remove(image)
+        
             for face in faces:
                 landmarks_for_face = self.landmark_predictor(gray, face)
                 landmarks = []
@@ -100,29 +122,29 @@ class Face2Vec:
     def show_keypoints(self):
         """ Shows the first face found with the keypoints drawn on it. """
 
-        print("Faces found: " + str(len(self.cropped_faces)))
-
-        if len(self.cropped_faces) != 0: # Only show the keypoints if there are faces found
-            for imgnum in range(len(self.face_keypoints)):
+        for head in range(len(self.heads)):
+            print(self.face_keypoints[head])
+        
+            if self.face_keypoints[head] != []:
                 # x, y = self.face_keypoints[imgnum][61]                            # If you want to see mouth points use this code
-                # cv2.circle(self.cropped_faces[0], (x, y), 1, (0, 0, 255), 2)
+                # cv2.circle(self.heads[0], (x, y), 1, (0, 0, 255), 2)
                 # x, y = self.face_keypoints[imgnum][67]
-                # cv2.circle(self.cropped_faces[0], (x, y), 1, (0, 0, 255), 2)
+                # cv2.circle(self.heads[0], (x, y), 1, (0, 0, 255), 2)
                 # x, y = self.face_keypoints[imgnum][62]
-                # cv2.circle(self.cropped_faces[0], (x, y), 1, (0, 0, 255), 2)
+                # cv2.circle(self.heads[0], (x, y), 1, (0, 0, 255), 2)
                 # x, y = self.face_keypoints[imgnum][66]
-                # cv2.circle(self.cropped_faces[0], (x, y), 1, (0, 0, 255), 2)
+                # cv2.circle(self.heads[0], (x, y), 1, (0, 0, 255), 2)
                 # x, y = self.face_keypoints[imgnum][63]
-                # cv2.circle(self.cropped_faces[0], (x, y), 1, (0, 0, 255), 2)
+                # cv2.circle(self.heads[0], (x, y), 1, (0, 0, 255), 2)
                 # x, y = self.face_keypoints[imgnum][65]
-                # cv2.circle(self.cropped_faces[0], (x, y), 1, (0, 0, 255), 2)
-                for i in range(68):                                                 # If you want to see all points use this code
-                    x, y = self.face_keypoints[imgnum][i]
-                    cv2.circle(self.cropped_faces[0], (x, y), 1, (0, 0, 255), 2)
+                # cv2.circle(self.heads[0], (x, y), 1, (0, 0, 255), 2)
+                for point in range(len(self.face_keypoints[head])):               # If you want to see all points use this code
+                    x, y = self.face_keypoints[head][point]
+                    cv2.circle(self.heads[head], (x, y), 1, (0, 0, 255), 2)
 
-            cv2.imshow("Image with Landmarks", self.cropped_faces[0])
-            cv2.waitKey(0)
-            cv2.destroyAllWindows()
+                cv2.imshow("Image with Landmarks", self.heads[head])
+                cv2.waitKey(0)
+                cv2.destroyAllWindows()
 
 
 # -----------------------------------------------------------------------------------------------
@@ -180,14 +202,18 @@ class Face2Vec:
         return dist
     
     def convert_to_vectors(self):
-        for i in range(len(self.face_keypoints)):
-            for j, keypoints in enumerate(self.face_keypoints):
+        # for i in range(len(self.face_keypoints)):
+            # print(self.face_keypoints[i])
+            
+        for j, keypoints in enumerate(self.face_keypoints):
+            if len(keypoints) != 0: # This is to check for head but no face
                 tensor = self.all_euclidian(keypoints)
                 self.face_vectors.append((tensor, self.current_frame_num, self.lip_seperation[j]))
-    
+
     def get_face_vectors(self):
-        return self.face_vectors
+        return self.face_vectors    
 
     def print_vectors(self):
+        print("Faces found: " + str(len(self.face_keypoints)))
         print("Length of vector " + str(len(self.face_vectors)))
-        print(self.face_vectors)
+        # print(self.face_vectors)
