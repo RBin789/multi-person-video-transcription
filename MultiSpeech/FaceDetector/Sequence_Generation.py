@@ -11,35 +11,28 @@ class Sequence_Generation:
             self.person_label = "B"
 
         self.generate_sequences()
-        self.print_sequences()
+        # self.print_sequences()
         
 
     def generate_sequences(self):
         current_sublist = []
         for i, item in enumerate(self.person_vectors):
 
-            if len(current_sublist) == 25:
-                self.person_sequences.append(current_sublist)
-                current_sublist = []
-
-            # Check if it's the first item or the current item is different from the previous one
-            if i == 0 or (item[1] - 1) == self.person_vectors[i-1][1]:
+            if (len(current_sublist) == 0) or ((item[1]) == (self.person_vectors[i-1][1]+1)):           # Add current frame to curent frame list, if first item or current frame is one more than previous i.e. continuous segment
                 current_sublist.append(item)
+                                                
+            else:
+                current_sublist = current_sublist * (25 // len(current_sublist) + 1)                    # If user segment changes, then repeat the list so far to extend
+                current_sublist = current_sublist[:25]                                                  # Trim the list to 25 frames
 
-            # if (item[1] - 1) != self.person_vectors[i-1][1]: # THIS STATMENT IS BREAKING THE SEQUENCE GENERATOR WHY IDK FIX PLS
-            #     self.person_sequences.append(current_sublist)
-            #     current_sublist = []
-
-        # Append the last sublist if it has any elements
-        if current_sublist:
-            self.person_sequences.append(current_sublist)
-            current_sublist = []
-        
-        for sequence in self.person_sequences: # Add extra fake frames to the sequence so that all sequences have a length of 25
-            if len(sequence) > 10:
-                while len(sequence) < 25:
-                    sequence.append(sequence[-1])
-
+            if len(current_sublist) == 25:
+                self.person_sequences.append(current_sublist)                                           # Appends the processed sublist to main list
+                current_sublist = []                                                                    # Create a new sublist
+  
+        if len(current_sublist) != 0:                                                                   # After loop is finished, append close off sublist, if it is non empty sublistAppend the last sublist if it has any elements
+            current_sublist = current_sublist * (25 // len(current_sublist) + 1)
+            current_sublist = current_sublist[:25]                                                      # Trim the list to 25 frames
+            self.person_sequences.append(current_sublist)                                               # Appends the processed sublist to main list
 
     def print_sequences(self):
         for i, sequence in enumerate(self.person_sequences):
