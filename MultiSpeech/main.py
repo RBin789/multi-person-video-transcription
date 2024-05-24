@@ -116,13 +116,15 @@ def run_lip_detection(person_sequences, cluster_label, model):
 def sort_Detected_Sequences(all_Sequences):
     all_Sequences.sort(key=lambda x: x[1])  # Sort by frame number
     
-def set_isTalking_In_Person(all_Sequences):
+def update_persons(all_Sequences):
     for sequence in all_Sequences: # Loops though every sequence
-        if sequence[-1] == 1:
-            for item in sequence[1]: # Loops though every frame number in the sequence
+        if sequence[2] == 1:
+            for frame in sequence[1]: # Loops though every frame number in the sequence
                 for person in all_persons: # Loops though every person
-                    if person.get_frame_number() == item:
-                        person.set_is_talking(True)
+                    if (person.get_label() == sequence[0]) and (person.get_frame_number() == frame): # If the person label matches the sequence label
+                        person.set_is_talking(2)
+                    # else:
+                    #     person.set_is_talking(1)
 
 class GUI:
 
@@ -201,17 +203,21 @@ class GUI:
         # Generate sequences for each person and run lip detection
         process_clustered_data(clustered_by_label, lip_detection_model)
 
-        print("All Sequences unsorted: ", all_Sequences)
+        # print("All Sequences unsorted: ", all_Sequences)
         
         # Sort all_Sequences by frame numbers
         sort_Detected_Sequences(all_Sequences)
         
         print("All Sequences sorted: ", all_Sequences)
 
-        set_isTalking_In_Person(all_Sequences)
+        update_persons(all_Sequences) # Update the persons with the talking frames labels 
 
         create_processed_video = CreateProcessedVideo(self.selected_file, all_persons, all_Sequences)
 
+        # for person in all_persons:
+            # print(person.get_label(), person.get_frame_number(), person.get_bounding_box(), len(person.get_face_coordinates()))
+
+        # len(person.get_face_vector()) person.get_lip_seperation()
 
         # Message after processing
         messagebox.showinfo("Finished", "The video transcription has been completed. \n The transcript is saved in the same directory as the video file.", parent=self.MyWindow)

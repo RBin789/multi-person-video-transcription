@@ -36,6 +36,7 @@ class Lip_Detection:  # This class takes in 25 values of lip separation and pred
         unique_sequence = self.get_unique_values(self.sequence)
 
         self.sequence_and_prediction = [self.cluster_label, unique_sequence, y_pred_max] # Set the cluster label, start frame, end frame, and prediction to the list
+        
 
         # print("The prediction this sequence is " + str(y_pred_max))
     

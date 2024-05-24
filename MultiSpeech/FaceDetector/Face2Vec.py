@@ -105,27 +105,26 @@ class Face2Vec:
             
           
             if len(faces) == 0:
-                # print("Faces found 2: " + str(len(faces)))
                 self.face_keypoints.append([])
                 self.lip_seperation.append([])
-                # print(len(self.face_keypoints[-1]))
-                # self.heads.remove(image)
         
             for face in faces:
                 landmarks_for_face = self.landmark_predictor(gray, face)
                 landmarks = []
-                for i in range(0, landmarks_for_face.num_parts):
-                    x = landmarks_for_face.part(i).x
-                    y = landmarks_for_face.part(i).y
+                for j in range(0, landmarks_for_face.num_parts):
+                    x = landmarks_for_face.part(j).x
+                    y = landmarks_for_face.part(j).y
                     landmarks.append((x, y))
                 self.lip_seperation.append(self.calculate_Lip_Seperation(landmarks))
-                self.face_keypoints.append(landmarks)      
+                self.face_keypoints.append(landmarks)
+                break  # This is to ensure that the landmark predictor only gets the first face even if it finds multiple (just take the first)    
 
     def show_keypoints(self):
         """ Shows the first face found with the keypoints drawn on it. """
 
         for head in range(len(self.heads)):
-            # print(self.face_keypoints[head])
+            x1, y1, x2, y2 = self.bounding_boxs[head]
+            cv2.rectangle(self.img, (x1, y1), (x2, y2), (0, 255, 0), 2)
         
             if self.face_keypoints[head] != []:
                 # x, y = self.face_keypoints[imgnum][61]                            # If you want to see mouth points use this code
@@ -142,12 +141,15 @@ class Face2Vec:
                 # cv2.circle(self.heads[0], (x, y), 1, (0, 0, 255), 2)
                 for point in range(len(self.face_keypoints[head])):               # If you want to see all points use this code
                     x, y = self.face_keypoints[head][point]
-                    cv2.circle(self.heads[head], (x, y), 1, (0, 0, 255), 2)
+                    cv2.circle(self.img, (x+x1, y+y1), 1, (0, 0, 255), 2)
 
-                cv2.imshow("Image with Landmarks", self.heads[head])
-                cv2.waitKey(1)
+                # cv2.imshow("Image with Landmarks", self.img)
+                # cv2.waitKey(1)
                 # cv2.destroyAllWindows()
+            
 
+            cv2.imshow("Image with Landmarks", self.img)
+        cv2.waitKey(1)
 
 # -----------------------------------------------------------------------------------------------
 
@@ -213,7 +215,8 @@ class Face2Vec:
                 try:
                     self.face_features.append((tensor, self.current_frame_num, self.lip_seperation[j], self.bounding_boxs[j], self.face_keypoints[j]))
                 except:
-                    self.face_features.append((tensor, self.current_frame_num, [], [], self.lip_seperation[j]))
+                    print("Error in Face2Vec.py! Check the convert_to_vectors function.")
+                    # self.face_features.append((tensor, self.current_frame_num, [], [], self.lip_seperation[j]))
 
     def get_face_features(self):
         return self.face_features    
