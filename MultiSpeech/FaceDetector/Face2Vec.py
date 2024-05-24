@@ -20,16 +20,17 @@ class Face2Vec:
         self.face_detector = face_detector
         self.landmark_predictor = landmark_predictor
         self.yolo_model = yolo_model
+        self.bounding_boxs = []
         self.heads = []
         self.face_keypoints = []
-        self.face_vectors = []
+        self.face_features = []
         self.lip_seperation = []
 
         self.detect_faces()
         self.detect_keypoints()
         self.convert_to_vectors()
         
-        # self.show_keypoints() # Display the keypoints on the faces.  Comment out if not needed
+        self.show_keypoints() # Display the keypoints on the faces.  Comment out if not needed
         # self.print_vectors() # Print the number of vectors.  Comment out if not needed
     
 
@@ -74,6 +75,7 @@ class Face2Vec:
 
 
         self.heads.append(self.img[y1:y2, x1:x2])
+        self.bounding_boxs.append((x1, y1, x2, y2))
     
 
     def calculate_Lip_Seperation(self, keypoints):
@@ -123,7 +125,7 @@ class Face2Vec:
         """ Shows the first face found with the keypoints drawn on it. """
 
         for head in range(len(self.heads)):
-            print(self.face_keypoints[head])
+            # print(self.face_keypoints[head])
         
             if self.face_keypoints[head] != []:
                 # x, y = self.face_keypoints[imgnum][61]                            # If you want to see mouth points use this code
@@ -143,8 +145,8 @@ class Face2Vec:
                     cv2.circle(self.heads[head], (x, y), 1, (0, 0, 255), 2)
 
                 cv2.imshow("Image with Landmarks", self.heads[head])
-                cv2.waitKey(0)
-                cv2.destroyAllWindows()
+                cv2.waitKey(1)
+                # cv2.destroyAllWindows()
 
 
 # -----------------------------------------------------------------------------------------------
@@ -208,12 +210,15 @@ class Face2Vec:
         for j, keypoints in enumerate(self.face_keypoints):
             if len(keypoints) != 0: # This is to check for head but no face
                 tensor = self.all_euclidian(keypoints)
-                self.face_vectors.append((tensor, self.current_frame_num, self.lip_seperation[j]))
+                try:
+                    self.face_features.append((tensor, self.current_frame_num, self.lip_seperation[j], self.bounding_boxs[j], self.face_keypoints[j]))
+                except:
+                    self.face_features.append((tensor, self.current_frame_num, [], [], self.lip_seperation[j]))
 
-    def get_face_vectors(self):
-        return self.face_vectors    
+    def get_face_features(self):
+        return self.face_features    
 
     def print_vectors(self):
         print("Faces found: " + str(len(self.face_keypoints)))
-        print("Length of vector " + str(len(self.face_vectors)))
-        # print(self.face_vectors)
+        print("Length of vector " + str(len(self.face_features)))
+        # print(self.face_features)

@@ -15,9 +15,12 @@ from FaceDetector.Face2Vec import *
 from FaceDetector.Sequence_Generation import *
 from FaceDetector.Lip_Detection import *
 from FaceDetector.audioToText import *
+from FaceDetector.Person import *
+from FaceDetector.CreateProcessedVideo import *
 from ultralytics import YOLO
 
-all_Face_Vectors = []
+# all_Face_Vectors = []
+all_persons = []
 all_Sequences = []
 selected_file = None  # Initialize variable to store video path
 lip_detection_model = tf.keras.models.load_model("MultiSpeech/FaceDetector/models/model.keras")
@@ -40,19 +43,23 @@ def process_video(video_path):
     success, frame = video.read() # Read the first frame
 
     while success:
-        
         face2vec = Face2Vec(frame, current_frame_num, face_detector, landmark_predictor, yolo_model)
-        face_vectors = face2vec.get_face_vectors()
-        all_Face_Vectors.extend(face_vectors)  # Final Format of all_Face_Vectors: [[vectors], frame_num, lip_sep]
+        face_features = face2vec.get_face_features()
+
+        for face_features in face_features:
+            person = Person(face_features[0], face_features[1], face_features[2], face_features[3], face_features[4]) # Create a new person object (face vector, frame number, lip_seperation, bounding_box, face_coordinates)
+            all_persons.append(person)
+        
         success, frame = video.read()
         current_frame_num += 1
         print("Frame Processed")
     # Release the video file
     video.release()
+    cv2.destroyAllWindows()
 
-def peform_kmeans_clustering(all_Face_Vectors, num_people):
+def peform_kmeans_clustering(all_persons, num_people):
     # Extract vectors from the list
-    vectors = [face_vector[0].flatten() for face_vector in all_Face_Vectors]
+    vectors = [face_vector.get_face_vector().flatten() for face_vector in all_persons]
 
     # Convert the list of vectors to a NumPy array
     vector_array = np.array(vectors)
@@ -70,8 +77,9 @@ def peform_kmeans_clustering(all_Face_Vectors, num_people):
     clustered_data = []
 
     # Assign cluster labels and preserve structure
-    for item, label in zip(all_Face_Vectors, cluster_labels):
-        clustered_data.append([item[0], item[1], item[2], label])
+    for item, label in zip(all_persons, cluster_labels):
+        clustered_data.append([item.get_face_vector(), item.get_frame_number(), item.get_lip_seperation(), label])
+        item.set_label(label)
 
     return clustered_data
 
@@ -100,12 +108,21 @@ def sequence_generation(face_vectors, cluster_label):
 
 def run_lip_detection(person_sequences, cluster_label, model):
     for i, sequence in enumerate(person_sequences): # Loops though every sequence of a person
+        if (len(sequence) == 0):
+            continue
         lip_detection = Lip_Detection(sequence, cluster_label, model)
         all_Sequences.append(lip_detection.get_sequence_and_prediction())
 
 def sort_Detected_Sequences(all_Sequences):
     all_Sequences.sort(key=lambda x: x[1])  # Sort by frame number
     
+def set_isTalking_In_Person(all_Sequences):
+    for sequence in all_Sequences: # Loops though every sequence
+        if sequence[-1] == 1:
+            for item in sequence[1]: # Loops though every frame number in the sequence
+                for person in all_persons: # Loops though every person
+                    if person.get_frame_number() == item:
+                        person.set_is_talking(True)
 
 class GUI:
 
@@ -178,17 +195,23 @@ class GUI:
         # audiototext = audioToText(self.selected_file)
 
         # K-means clustering on face vectors
-        clustered_data = peform_kmeans_clustering(all_Face_Vectors, number_people)
+        clustered_data = peform_kmeans_clustering(all_persons, number_people)
         clustered_by_label = split_data_by_cluster(clustered_data)
 
         # Generate sequences for each person and run lip detection
         process_clustered_data(clustered_by_label, lip_detection_model)
 
         print("All Sequences unsorted: ", all_Sequences)
+        
         # Sort all_Sequences by frame numbers
         sort_Detected_Sequences(all_Sequences)
         
         print("All Sequences sorted: ", all_Sequences)
+
+        set_isTalking_In_Person(all_Sequences)
+
+        create_processed_video = CreateProcessedVideo(self.selected_file, all_persons, all_Sequences)
+
 
         # Message after processing
         messagebox.showinfo("Finished", "The video transcription has been completed. \n The transcript is saved in the same directory as the video file.", parent=self.MyWindow)
@@ -198,17 +221,16 @@ class GUI:
         # Close both windows
         self.MyWindow.destroy()
 
-
 # ---------------------------------------------------------------------------------------------------------------------------
 
 def main():
-    # total_time = time.monotonic()
+    total_time = time.monotonic()
 
     gui = GUI()
 
-    # print("Number of Face Vectors: ", len(all_Face_Vectors))
+    print("Number of Face Vectors: ", len(all_persons))
     # print(all_Face_Vectors[0])
-    # print("Total Time taken: ", time.monotonic() - total_time)
+    print("Total Time taken: ", time.monotonic() - total_time)
     
     
     
