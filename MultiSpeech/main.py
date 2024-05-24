@@ -38,7 +38,7 @@ def process_video(video_path):
 
     face_detector = dlib.get_frontal_face_detector()
     landmark_predictor = dlib.shape_predictor("MultiSpeech/FaceDetector/shape_predictor_68_face_landmarks.dat")
-    yolo_model = YOLO("MultiSpeech/FaceDetector/models/best.pt")
+    yolo_model = YOLO("MultiSpeech/FaceDetector/models/train4best.pt")
     current_frame_num = 1
     success, frame = video.read() # Read the first frame
 
