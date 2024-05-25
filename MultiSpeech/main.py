@@ -22,12 +22,10 @@ from PIL import Image, ImageTk, ImageOps
 from moviepy.editor import VideoFileClip
 from threading import Thread
 
-# all_Face_Vectors = []
 all_persons = []
 all_Sequences = []
 selected_file = None  # Initialize variable to store video path
-lip_detection_model = tf.keras.models.load_model("MultiSpeech/FaceDetector/models/model.keras")
-
+lip_detection_model = tf.keras.models.load_model("MultiSpeech/FaceDetector/models/lip_detection_model.keras")
 
 def process_video(video_path):
 
@@ -40,7 +38,7 @@ def process_video(video_path):
         exit()
 
     face_detector = dlib.get_frontal_face_detector()
-    landmark_predictor = dlib.shape_predictor("MultiSpeech/FaceDetector/shape_predictor_68_face_landmarks.dat")
+    landmark_predictor = dlib.shape_predictor("MultiSpeech/FaceDetector/models/shape_predictor_68_face_landmarks.dat")
     yolo_model = YOLO("MultiSpeech/FaceDetector/models/train4best.pt")
     current_frame_num = 1
     success, frame = video.read() # Read the first frame
@@ -209,6 +207,7 @@ class GUI:
         # Generate sequences for each person and run lip detection
         process_clustered_data(clustered_by_label, lip_detection_model)
 
+        
         # Sort all_Sequences by frame numbers
         sort_Detected_Sequences(all_Sequences)
         
@@ -354,11 +353,7 @@ def main():
     gui = GUI()
 
     print("Number of Face Vectors: ", len(all_persons))
-    # print(all_Face_Vectors[0])
     print("Total Time taken: ", time.monotonic() - total_time)
     
-    
-    
-
 if __name__ == "__main__":
     main()
