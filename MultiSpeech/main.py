@@ -19,12 +19,10 @@ from FaceDetector.Person import *
 from FaceDetector.CreateProcessedVideo import *
 from ultralytics import YOLO
 
-# all_Face_Vectors = []
 all_persons = []
 all_Sequences = []
 selected_file = None  # Initialize variable to store video path
-lip_detection_model = tf.keras.models.load_model("MultiSpeech/FaceDetector/models/model.keras")
-
+lip_detection_model = tf.keras.models.load_model("MultiSpeech/FaceDetector/models/lip_detection_model.keras")
 
 def process_video(video_path):
 
@@ -37,7 +35,7 @@ def process_video(video_path):
         exit()
 
     face_detector = dlib.get_frontal_face_detector()
-    landmark_predictor = dlib.shape_predictor("MultiSpeech/FaceDetector/shape_predictor_68_face_landmarks.dat")
+    landmark_predictor = dlib.shape_predictor("MultiSpeech/FaceDetector/models/shape_predictor_68_face_landmarks.dat")
     yolo_model = YOLO("MultiSpeech/FaceDetector/models/train4best.pt")
     current_frame_num = 1
     success, frame = video.read() # Read the first frame
@@ -123,8 +121,6 @@ def update_persons(all_Sequences):
                 for person in all_persons: # Loops though every person
                     if (person.get_label() == sequence[0]) and (person.get_frame_number() == frame): # If the person label matches the sequence label
                         person.set_is_talking(2)
-                    # else:
-                    #     person.set_is_talking(1)
 
 class GUI:
 
@@ -202,8 +198,6 @@ class GUI:
 
         # Generate sequences for each person and run lip detection
         process_clustered_data(clustered_by_label, lip_detection_model)
-
-        # print("All Sequences unsorted: ", all_Sequences)
         
         # Sort all_Sequences by frame numbers
         sort_Detected_Sequences(all_Sequences)
@@ -214,13 +208,8 @@ class GUI:
 
         create_processed_video = CreateProcessedVideo(self.selected_file, all_persons, all_Sequences)
 
-        # for person in all_persons:
-            # print(person.get_label(), person.get_frame_number(), person.get_bounding_box(), len(person.get_face_coordinates()))
-
-        # len(person.get_face_vector()) person.get_lip_seperation()
-
         # Message after processing
-        messagebox.showinfo("Finished", "The video transcription has been completed. \n The transcript is saved in the same directory as the video file.", parent=self.MyWindow)
+        messagebox.showinfo("Finished", "The video transcription has been completed. \n The video is saved in the same directory as the loaded video file.", parent=self.MyWindow)
         self.MyWindow.destroy()  # Close the main window
     
     def BtnCancel_Clicked(self):
@@ -235,11 +224,7 @@ def main():
     gui = GUI()
 
     print("Number of Face Vectors: ", len(all_persons))
-    # print(all_Face_Vectors[0])
     print("Total Time taken: ", time.monotonic() - total_time)
     
-    
-    
-
 if __name__ == "__main__":
     main()

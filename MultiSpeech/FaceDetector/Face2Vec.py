@@ -127,26 +127,10 @@ class Face2Vec:
             cv2.rectangle(self.img, (x1, y1), (x2, y2), (0, 255, 0), 2)
         
             if self.face_keypoints[head] != []:
-                # x, y = self.face_keypoints[imgnum][61]                            # If you want to see mouth points use this code
-                # cv2.circle(self.heads[0], (x, y), 1, (0, 0, 255), 2)
-                # x, y = self.face_keypoints[imgnum][67]
-                # cv2.circle(self.heads[0], (x, y), 1, (0, 0, 255), 2)
-                # x, y = self.face_keypoints[imgnum][62]
-                # cv2.circle(self.heads[0], (x, y), 1, (0, 0, 255), 2)
-                # x, y = self.face_keypoints[imgnum][66]
-                # cv2.circle(self.heads[0], (x, y), 1, (0, 0, 255), 2)
-                # x, y = self.face_keypoints[imgnum][63]
-                # cv2.circle(self.heads[0], (x, y), 1, (0, 0, 255), 2)
-                # x, y = self.face_keypoints[imgnum][65]
-                # cv2.circle(self.heads[0], (x, y), 1, (0, 0, 255), 2)
-                for point in range(len(self.face_keypoints[head])):               # If you want to see all points use this code
+                for point in range(len(self.face_keypoints[head])):
                     x, y = self.face_keypoints[head][point]
-                    cv2.circle(self.img, (x+x1, y+y1), 1, (0, 0, 255), 2)
-
-                # cv2.imshow("Image with Landmarks", self.img)
-                # cv2.waitKey(1)
-                # cv2.destroyAllWindows()
-            
+                    color = (0, 0, 255) if point in [61, 62, 63, 65, 66, 67] else (0, 255, 255)
+                    cv2.circle(self.img, (x+x1, y+y1), 1, color, 2)
 
             cv2.imshow("Image with Landmarks", self.img)
         cv2.waitKey(1)
@@ -184,7 +168,6 @@ class Face2Vec:
         self.euc_xy(keypoints)
         self.euc_center(keypoints)
         tensor = np.rot90(np.hstack((self.euclidianX, self.euclidianY, self.euclidian)))
-
         return tensor
 
     def distance_1D(self, a, b):
@@ -202,7 +185,6 @@ class Face2Vec:
         a = np.array((x1, y1))
         b = np.array((x2, y2))
         dist = np.linalg.norm(a - b)
-
         return dist
     
     def convert_to_vectors(self):
@@ -216,7 +198,6 @@ class Face2Vec:
                     self.face_features.append((tensor, self.current_frame_num, self.lip_seperation[j], self.bounding_boxs[j], self.face_keypoints[j]))
                 except:
                     print("Error in Face2Vec.py! Check the convert_to_vectors function.")
-                    # self.face_features.append((tensor, self.current_frame_num, [], [], self.lip_seperation[j]))
 
     def get_face_features(self):
         return self.face_features    

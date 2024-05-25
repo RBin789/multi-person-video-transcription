@@ -42,7 +42,7 @@ class CreateProcessedVideo:
         x1, y1, x2, y2 = bounding_box
         if talking == 2:
             self.draw_rectangle(draw, x1, y1, x2, y2, color=(255, 0, 0))
-            self.draw_text(draw, x1, y1 + 20, label, color=(255, 0, 0))
+            self.draw_text(draw, x1, y1 - 40, label, color=(255, 0, 0))
 
             for i, point in enumerate(face_coordinates):
                 color = (255, 0, 0) if i in [61, 62, 63, 65, 66, 67] else (255, 255, 0)
@@ -68,7 +68,6 @@ class CreateProcessedVideo:
 
     def draw_text(self, draw, x, y, label, color):
         try:
-            # You can specify a font here if you have one, e.g., ImageFont.truetype("arial.ttf", 15)
             font = ImageFont.truetype("arial.ttf", 30)
             draw.text((x, y), label, fill=color, font=font)
         except Exception as e:
