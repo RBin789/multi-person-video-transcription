@@ -8,9 +8,7 @@ import matplotlib.pyplot as plt
 from tkinter import *
 from tkinter import messagebox
 from tkinter import filedialog
-import pygame
-from threading import Thread
-sys.path.insert(0, 'MultiSpeech/FaceDetector')
+sys.path.insert(0, 'MultiSpeech\FaceDetector')
 import tensorflow as tf
 from tensorflow import keras
 from FaceDetector.Face2Vec import *
@@ -20,21 +18,20 @@ from FaceDetector.audioToText import *
 from FaceDetector.Person import *
 from FaceDetector.CreateProcessedVideo import *
 from ultralytics import YOLO
+from PIL import Image, ImageTk, ImageOps
 from moviepy.editor import VideoFileClip
-from PIL import Image, ImageOps, ImageTk
+from threading import Thread
+import pygame
 import tkinter as tk
 from tkinter import Label, Button, Canvas, Frame
 
-# Initialize pygame mixer for audio playback
-pygame.mixer.init()
-
-# all_Face_Vectors = []
 all_persons = []
 all_Sequences = []
 selected_file = None  # Initialize variable to store video path
-lip_detection_model = tf.keras.models.load_model("MultiSpeech/FaceDetector/models/model.keras")
+lip_detection_model = tf.keras.models.load_model("MultiSpeech/FaceDetector/models/lip_detection_model.keras")
 
 def process_video(video_path):
+
     # Open the video file
     video = cv2.VideoCapture(video_path)
 
@@ -44,19 +41,19 @@ def process_video(video_path):
         exit()
 
     face_detector = dlib.get_frontal_face_detector()
-    landmark_predictor = dlib.shape_predictor("MultiSpeech/FaceDetector/shape_predictor_68_face_landmarks.dat")
+    landmark_predictor = dlib.shape_predictor("MultiSpeech/FaceDetector/models/shape_predictor_68_face_landmarks.dat")
     yolo_model = YOLO("MultiSpeech/FaceDetector/models/train4best.pt")
     current_frame_num = 1
-    success, frame = video.read()  # Read the first frame
+    success, frame = video.read() # Read the first frame
 
     while success:
         face2vec = Face2Vec(frame, current_frame_num, face_detector, landmark_predictor, yolo_model)
         face_features = face2vec.get_face_features()
 
         for face_features in face_features:
-            person = Person(face_features[0], face_features[1], face_features[2], face_features[3], face_features[4])  # Create a new person object (face vector, frame number, lip_seperation, bounding_box, face_coordinates)
+            person = Person(face_features[0], face_features[1], face_features[2], face_features[3], face_features[4]) # Create a new person object (face vector, frame number, lip_seperation, bounding_box, face_coordinates)
             all_persons.append(person)
-
+        
         success, frame = video.read()
         current_frame_num += 1
         print("Frame Processed")
@@ -97,14 +94,14 @@ def split_data_by_cluster(clustered_data):
         if cluster_label not in clustered_by_label:
             clustered_by_label[cluster_label] = []
         clustered_by_label[cluster_label].append(item)
-    return clustered_by_label  # A dictionary where keys are cluster labels and values are lists of data points belonging to that cluster.
+    return clustered_by_label # A dictionary where keys are cluster labels and values are lists of data points belonging to that cluster.
 
 def run_gui():
     app = GUI()
 
 def process_clustered_data(clustered_by_label, model):
     for cluster_label, cluster_data in clustered_by_label.items():
-        person_sequences = sequence_generation(cluster_label, cluster_data)  # all of one persons sequences
+        person_sequences = sequence_generation(cluster_label, cluster_data) # all of one persons sequences
         run_lip_detection(person_sequences, cluster_label, model)
 
 def sequence_generation(face_vectors, cluster_label):
@@ -114,24 +111,25 @@ def sequence_generation(face_vectors, cluster_label):
     return person_sequences
 
 def run_lip_detection(person_sequences, cluster_label, model):
-    for i, sequence in enumerate(person_sequences):  # Loops though every sequence of a person
-        if len(sequence) == 0:
+    for i, sequence in enumerate(person_sequences): # Loops though every sequence of a person
+        if (len(sequence) == 0):
             continue
         lip_detection = Lip_Detection(sequence, cluster_label, model)
         all_Sequences.append(lip_detection.get_sequence_and_prediction())
 
 def sort_Detected_Sequences(all_Sequences):
     all_Sequences.sort(key=lambda x: x[1])  # Sort by frame number
-
+    
 def update_persons(all_Sequences):
-    for sequence in all_Sequences:  # Loops though every sequence
+    for sequence in all_Sequences: # Loops though every sequence
         if sequence[2] == 1:
-            for frame in sequence[1]:  # Loops though every frame number in the sequence
-                for person in all_persons:  # Loops though every person
-                    if person.get_label() == sequence[0] and person.get_frame_number() == frame:  # If the person label matches the sequence label
+            for frame in sequence[1]: # Loops though every frame number in the sequence
+                for person in all_persons: # Loops though every person
+                    if (person.get_label() == sequence[0]) and (person.get_frame_number() == frame): # If the person label matches the sequence label
                         person.set_is_talking(2)
                     # else:
                     #     person.set_is_talking(1)
+
 
 class GUI:
     def __init__(self):
@@ -393,6 +391,7 @@ class SecondGUI:
                     self.right_canvas.image = self.zoomed_image
                     break
 
+                    
 # ---------------------------------------------------------------------------------------------------------------------------
 
 def main():
@@ -401,8 +400,7 @@ def main():
     gui = GUI()
 
     print("Number of Face Vectors: ", len(all_persons))
-    # print(all_Face_Vectors[0])
     print("Total Time taken: ", time.monotonic() - total_time)
-
+    
 if __name__ == "__main__":
     main()
