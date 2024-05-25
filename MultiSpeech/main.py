@@ -18,6 +18,9 @@ from FaceDetector.audioToText import *
 from FaceDetector.Person import *
 from FaceDetector.CreateProcessedVideo import *
 from ultralytics import YOLO
+from PIL import Image, ImageTk, ImageOps
+from moviepy.editor import VideoFileClip
+from threading import Thread
 
 # all_Face_Vectors = []
 all_persons = []
@@ -126,14 +129,16 @@ def update_persons(all_Sequences):
                     # else:
                     #     person.set_is_talking(1)
 
+
 class GUI:
 
     def __init__(self):
         self.run_gui()
         self.selected_file = None  # Initialize variable to store video path
+        self.output_video_path = None
+        self.number_people = None
 
     def run_gui(self):
-
         # Create a Window.
         self.MyWindow = Tk()  # Create a window
         self.MyWindow.title("Multi Person Video Transcription")  # Change the Title of the GUI
@@ -167,9 +172,9 @@ class GUI:
         self.startButton = Button(centered_frame, text="Start", state=DISABLED, command=self.BtnStart_Clicked)
         self.startButton.pack(pady=10)
 
-        # Cancel Button
-        cancelButton = Button(centered_frame, text="Cancel", command=self.BtnCancel_Clicked)
-        cancelButton.pack(pady=10)
+        # Next Button (initially disabled)
+        self.nextButton = Button(centered_frame, text="Next", state=DISABLED, command=self.BtnNext_Clicked)
+        self.nextButton.pack(pady=10)
 
         # Calling the mainloop()
         self.MyWindow.mainloop()
@@ -184,11 +189,12 @@ class GUI:
         if file_path:  # Check if a file was selected
             self.selected_file = file_path
             self.startButton.config(state=NORMAL)  # Enable Start button after selecting video
+            self.nextButton.config(state=NORMAL)  # Enable Next button after selecting video
 
     def BtnStart_Clicked(self):
         # Access the entered number using self.numberEntry.get()
-        number_people = int(self.numberEntry.get())
-        print(f"Processing video with num people being: {number_people}")
+        self.number_people = int(self.numberEntry.get())
+        print(f"Processing video with num people being: {self.number_people}")
 
         # Process the video
         process_video(self.selected_file)
@@ -197,14 +203,12 @@ class GUI:
         # audiototext = audioToText(self.selected_file)
 
         # K-means clustering on face vectors
-        clustered_data = peform_kmeans_clustering(all_persons, number_people)
+        clustered_data = peform_kmeans_clustering(all_persons, self.number_people)
         clustered_by_label = split_data_by_cluster(clustered_data)
 
         # Generate sequences for each person and run lip detection
         process_clustered_data(clustered_by_label, lip_detection_model)
 
-        # print("All Sequences unsorted: ", all_Sequences)
-        
         # Sort all_Sequences by frame numbers
         sort_Detected_Sequences(all_Sequences)
         
@@ -213,20 +217,135 @@ class GUI:
         update_persons(all_Sequences) # Update the persons with the talking frames labels 
 
         create_processed_video = CreateProcessedVideo(self.selected_file, all_persons, all_Sequences)
+        self.output_video_path = self.selected_file + "_modified.mp4"
 
-        # for person in all_persons:
-            # print(person.get_label(), person.get_frame_number(), person.get_bounding_box(), len(person.get_face_coordinates()))
-
-        # len(person.get_face_vector()) person.get_lip_seperation()
+        # Next Button (initially enabled)
+        self.nextButton.config(state=NORMAL)  # Enable Next button after processing
 
         # Message after processing
-        messagebox.showinfo("Finished", "The video transcription has been completed. \n The transcript is saved in the same directory as the video file.", parent=self.MyWindow)
-        self.MyWindow.destroy()  # Close the main window
+        messagebox.showinfo("Finished", "The video transcription has been completed.", parent=self.MyWindow)
     
-    def BtnCancel_Clicked(self):
-        # Close both windows
+    def BtnNext_Clicked(self):
         self.MyWindow.destroy()
+        self.open_second_gui(self.output_video_path, self.number_people)
 
+    def open_second_gui(self, output_video_path, num_people):
+        second_window = Tk()
+        second_window.title("Video Analysis Result")
+        second_window.geometry('1200x800')
+
+        left_frame = Frame(second_window, width=840, height=800)
+        left_frame.pack(side=LEFT, padx=10, pady=10)
+        left_frame.pack_propagate(False)
+
+        video_label = Label(left_frame, text="Video Player", font=("Arial Bold", 20))
+        video_label.pack(pady=20)
+        
+        # Video display
+        self.video_canvas = Canvas(left_frame, width=720, height=560)
+        self.video_canvas.pack()
+
+        self.cap = cv2.VideoCapture(output_video_path)
+
+        control_frame = Frame(left_frame)
+        control_frame.pack(pady=10)
+
+        play_button = Button(control_frame, text="Play", command=self.play_video)
+        play_button.grid(row=0, column=0, padx=5)
+
+        pause_button = Button(control_frame, text="Pause", command=self.pause_video)
+        pause_button.grid(row=0, column=1, padx=5)
+
+        replay_button = Button(control_frame, text="Replay", command=self.replay_video)
+        replay_button.grid(row=0, column=2, padx=5)
+
+        right_frame = Frame(second_window, width=360, height=800)
+        right_frame.pack(side=RIGHT, padx=10, pady=10)
+        right_frame.pack_propagate(False)
+
+        right_top_frame = Frame(right_frame, width=360, height=320)
+        right_top_frame.pack(pady=(0, 10))
+        right_top_frame.pack_propagate(False)
+
+        right_middle_frame = Frame(right_frame, width=360, height=320)
+        right_middle_frame.pack(pady=(0, 10))
+        right_middle_frame.pack_propagate(False)
+
+        # Placeholder images
+        self.speaker_labels = []
+        self.speaker_canvases = []
+
+        for i in range(num_people):
+            speaker_label = Label(right_top_frame if i == 0 else right_middle_frame, text=f"Speaker {i+1}", font=("Arial Bold", 15))
+            speaker_label.pack(pady=10)
+            self.speaker_labels.append(speaker_label)
+
+            speaker_canvas = Canvas(right_top_frame if i == 0 else right_middle_frame, width=320, height=240)
+            speaker_canvas.pack()
+            self.speaker_canvases.append(speaker_canvas)
+
+        self.load_placeholder_images(num_people)
+        self.update_frame()
+
+        second_window.mainloop()
+
+    def load_placeholder_images(self, num_people):
+        self.speaker_images = []
+
+        for i in range(num_people):
+            img = Image.open(f"placeholder_{i+1}.png")  # Placeholder image paths
+            img_gray = ImageOps.grayscale(img)
+            img_tk = ImageTk.PhotoImage(img_gray)
+            self.speaker_images.append(img_tk)
+
+        for i, canvas in enumerate(self.speaker_canvases):
+            canvas.create_image(0, 0, anchor=NW, image=self.speaker_images[i])
+
+    def play_video(self):
+        global playing
+        playing = True
+        self.video_thread = Thread(target=self.update_frame)
+        self.video_thread.start()
+        self.audio_clip = VideoFileClip(self.output_video_path).audio
+        self.audio_thread = Thread(target=self.audio_clip.preview)
+        self.audio_thread.start()
+
+    def pause_video(self):
+        global playing
+        playing = False
+
+    def replay_video(self):
+        self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        self.play_video()
+
+    def update_frame(self):
+        global playing
+        while playing:
+            ret, frame = self.cap.read()
+            if ret:
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                frame = cv2.resize(frame, (720, 560))  # Resize the frame to match the canvas size
+                img = Image.fromarray(frame)
+                imgtk = ImageTk.PhotoImage(image=img)
+                self.video_canvas.create_image(0, 0, anchor=NW, image=imgtk)
+                self.video_canvas.image = imgtk
+
+                # Update speaker images based on detected frames
+                self.update_speakers(frame)
+            else:
+                break
+            time.sleep(1/30)  # Control the frame rate
+
+    def update_speakers(self, frame):
+        # Logic to update speakers based on frame
+        for person in all_persons:
+            if person.get_is_talking() == 2:
+                if self.cap.get(cv2.CAP_PROP_POS_FRAMES) == person.get_frame_number():
+                    img = Image.open(f"speaker_{person.get_label()}.png")
+                    img_tk = ImageTk.PhotoImage(img)
+                    self.speaker_canvases[person.get_label()].create_image(0, 0, anchor=NW, image=img_tk)
+                    self.speaker_canvases[person.get_label()].image = img_tk
+                    
 # ---------------------------------------------------------------------------------------------------------------------------
 
 def main():
