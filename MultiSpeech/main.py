@@ -21,6 +21,9 @@ from ultralytics import YOLO
 from PIL import Image, ImageTk, ImageOps
 from moviepy.editor import VideoFileClip
 from threading import Thread
+import pygame
+import tkinter as tk
+from tkinter import Label, Button, Canvas, Frame
 
 all_persons = []
 all_Sequences = []
@@ -129,12 +132,14 @@ def update_persons(all_Sequences):
 
 
 class GUI:
-
     def __init__(self):
         self.run_gui()
-        self.selected_file = None  # Initialize variable to store video path
+        self.selected_file = None
         self.output_video_path = None
         self.number_people = None
+        self.playing = False
+        self.queue = Queue()
+        self.update_gui()
 
     def run_gui(self):
         # Create a Window.
@@ -207,13 +212,12 @@ class GUI:
         # Generate sequences for each person and run lip detection
         process_clustered_data(clustered_by_label, lip_detection_model)
 
-        
         # Sort all_Sequences by frame numbers
         sort_Detected_Sequences(all_Sequences)
-        
+
         print("All Sequences sorted: ", all_Sequences)
 
-        update_persons(all_Sequences) # Update the persons with the talking frames labels 
+        update_persons(all_Sequences)  # Update the persons with the talking frames labels
 
         create_processed_video = CreateProcessedVideo(self.selected_file, all_persons, all_Sequences)
         self.output_video_path = self.selected_file + "_modified.mp4"
@@ -221,129 +225,172 @@ class GUI:
         # Next Button (initially enabled)
         self.nextButton.config(state=NORMAL)  # Enable Next button after processing
 
-        # Message after processing
         messagebox.showinfo("Finished", "The video transcription has been completed.", parent=self.MyWindow)
-    
+
     def BtnNext_Clicked(self):
         self.MyWindow.destroy()
         self.open_second_gui(self.output_video_path, self.number_people)
 
-    def open_second_gui(self, output_video_path, num_people):
-        second_window = Tk()
-        second_window.title("Video Analysis Result")
-        second_window.geometry('1200x800')
+    def open_second_gui(self, video_path, number_people):
+        SecondGUI(video_path, number_people)
 
-        left_frame = Frame(second_window, width=840, height=800)
-        left_frame.pack(side=LEFT, padx=10, pady=10)
-        left_frame.pack_propagate(False)
+class SecondGUI:
+    def __init__(self, video_path, number_people):
+        self.window = tk.Tk()
+        self.window.title("Video Analysis Result")
+        self.window.geometry("1200x800")
 
-        video_label = Label(left_frame, text="Video Player", font=("Arial Bold", 20))
-        video_label.pack(pady=20)
-        
-        # Video display
-        self.video_canvas = Canvas(left_frame, width=720, height=560)
-        self.video_canvas.pack()
+        self.playing = False
+        self.cap = cv2.VideoCapture(video_path)
+        self.current_frame = None
+        self.fps = self.cap.get(cv2.CAP_PROP_FPS)  # Get the FPS of the video
+        self.interval = int(1000 / self.fps)  # Calculate the interval in milliseconds
 
-        self.cap = cv2.VideoCapture(output_video_path)
+        # Extract audio from video
+        self.audio_thread = None
+        self.audio_path = video_path.replace(".mp4", ".wav")
+        video_clip = VideoFileClip(video_path)
+        video_clip.audio.write_audiofile(self.audio_path)
+        print(f"Audio path: {self.audio_path}")
 
-        control_frame = Frame(left_frame)
-        control_frame.pack(pady=10)
+        # Create main layout
+        self.main_frame = Frame(self.window, bg='#ffffff')
+        self.main_frame.pack(fill=BOTH, expand=True, padx=20, pady=20)
 
-        play_button = Button(control_frame, text="Play", command=self.play_video)
-        play_button.grid(row=0, column=0, padx=5)
+        # Top frame for labels
+        self.top_frame = Frame(self.main_frame, bg='#ffffff', height=150)
+        self.top_frame.pack(fill=X, side=TOP, expand=False)
 
-        pause_button = Button(control_frame, text="Pause", command=self.pause_video)
-        pause_button.grid(row=0, column=1, padx=5)
+        # Modified video label
+        self.modified_video_label = Label(self.top_frame, text="Modified Video", font=("Arial", 16, "bold"), fg="black", bg='#ffffff')
+        self.modified_video_label.pack(side=LEFT, padx=20, anchor='nw')
 
-        replay_button = Button(control_frame, text="Replay", command=self.replay_video)
-        replay_button.grid(row=0, column=2, padx=5)
+        # Zoomed face label
+        self.zoomed_face_label = Label(self.top_frame, text="Zoomed face", font=("Arial", 16, "bold"), fg="black", bg='#ffffff')
+        self.zoomed_face_label.place(x=820, y=0)  # Use place to position it at the top left of the right frame
 
-        right_frame = Frame(second_window, width=360, height=800)
-        right_frame.pack(side=RIGHT, padx=10, pady=10)
-        right_frame.pack_propagate(False)
+        # Middle frame for video displays
+        self.middle_frame = Frame(self.main_frame, bg='#ffffff', height=600)
+        self.middle_frame.pack(fill=BOTH, expand=True, pady=(10, 0))
 
-        right_top_frame = Frame(right_frame, width=360, height=320)
-        right_top_frame.pack(pady=(0, 10))
-        right_top_frame.pack_propagate(False)
+        # Left frame for the modified video
+        self.left_frame = Frame(self.middle_frame, width=840, height=600, bg='#ffffff', relief='ridge', bd=2)
+        self.left_frame.pack(side=LEFT, padx=20, pady=20, expand=True, fill=BOTH)
+        self.canvas = Canvas(self.left_frame, width=840, height=600, bg='#ffffff')
+        self.canvas.pack(expand=True, fill=BOTH)
 
-        right_middle_frame = Frame(right_frame, width=360, height=320)
-        right_middle_frame.pack(pady=(0, 10))
-        right_middle_frame.pack_propagate(False)
+        # Right frame for the zoomed face
+        self.right_frame = Frame(self.middle_frame, width=360, height=320, bg='#ffffff', relief='ridge', bd=2)
+        self.right_frame.pack(side=RIGHT, padx=20, pady=20, expand=True, fill=BOTH)
+        self.right_canvas = Canvas(self.right_frame, width=360, height=320, bg='#ffffff')
+        self.right_canvas.pack(expand=True, fill=BOTH)
 
-        # Placeholder images
-        self.speaker_labels = []
-        self.speaker_canvases = []
+        # Empty text box frame
+        self.text_box_frame = Frame(self.right_frame, width=360, height=320, bg='#ffffff', relief='ridge', bd=2)
+        self.text_box_frame.pack(pady=10, expand=True, fill=BOTH)
+        self.text_box_label = Label(self.text_box_frame, text="leave the box empty", font=("Arial", 16, "bold"), fg="grey", bg='#ffffff')
+        self.text_box_label.pack()
 
-        for i in range(num_people):
-            speaker_label = Label(right_top_frame if i == 0 else right_middle_frame, text=f"Speaker {i+1}", font=("Arial Bold", 15))
-            speaker_label.pack(pady=10)
-            self.speaker_labels.append(speaker_label)
+        # Bottom frame for control buttons
+        self.bottom_frame = Frame(self.main_frame, bg='#ffffff', height=50)
+        self.bottom_frame.pack(fill=X, side=BOTTOM, pady=10, expand=False)
 
-            speaker_canvas = Canvas(right_top_frame if i == 0 else right_middle_frame, width=320, height=240)
-            speaker_canvas.pack()
-            self.speaker_canvases.append(speaker_canvas)
+        self.play_button = Button(self.bottom_frame, text="play", font=("Arial", 14), command=self.play_video, width=10, bg='#A9A9A9', fg='white')
+        self.play_button.pack(side=LEFT, padx=10, pady=5, anchor='sw')
+        self.stop_button = Button(self.bottom_frame, text="stop", font=("Arial", 14), command=self.stop_video, width=10, bg='#A9A9A9', fg='white')
+        self.stop_button.pack(side=LEFT, padx=10, pady=5, anchor='sw')
 
-        self.load_placeholder_images(num_people)
-        self.update_frame()
 
-        second_window.mainloop()
+        self.update_video_display()  # Update the display
+        self.window.mainloop()
 
-    def load_placeholder_images(self, num_people):
-        self.speaker_images = []
-
-        for i in range(num_people):
-            img = Image.open(f"placeholder_{i+1}.png")  # Placeholder image paths
-            img_gray = ImageOps.grayscale(img)
-            img_tk = ImageTk.PhotoImage(img_gray)
-            self.speaker_images.append(img_tk)
-
-        for i, canvas in enumerate(self.speaker_canvases):
-            canvas.create_image(0, 0, anchor=NW, image=self.speaker_images[i])
+    def play_audio(self):
+        pygame.mixer.music.load(self.audio_path)
+        pygame.mixer.music.play()
+        pygame.mixer.music.set_endevent(pygame.USEREVENT)  # Set event for audio end
+        print("Playing audio")
 
     def play_video(self):
-        global playing
-        playing = True
-        self.video_thread = Thread(target=self.update_frame)
-        self.video_thread.start()
-        self.audio_clip = VideoFileClip(self.output_video_path).audio
-        self.audio_thread = Thread(target=self.audio_clip.preview)
-        self.audio_thread.start()
+        self.playing = True
+        self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)  # Reset the video to the first frame
+        self.start_time = time.time()  # Record the start time
 
-    def pause_video(self):
-        global playing
-        playing = False
+        if self.audio_thread is None or not self.audio_thread.is_alive():
+            self.audio_thread = Thread(target=self.play_audio)
+            self.audio_thread.start()
+            print("Started audio thread")
+        else:
+            pygame.mixer.music.stop()  # Stop the current audio
+            pygame.mixer.music.play()  # Replay the audio
+            self.start_time = time.time()  # Reset the start time for synchronization
+            self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)  # Reset the video to the first frame again for synchronization
+            print("Rewind and play audio")
 
-    def replay_video(self):
-        self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-        self.play_video()
+    def stop_video(self):
+        self.playing = False
+        pygame.mixer.music.stop()
+        print("Stopped audio")
+        if self.audio_thread is not None:
+            self.audio_thread.join()
+            self.audio_thread = None
+            print("Joined audio thread")
 
-    def update_frame(self):
-        global playing
-        while playing:
+    def update_video_display(self):
+        for event in pygame.event.get():
+            if event.type == pygame.USEREVENT:
+                self.stop_video()  # Stop video when audio ends
+                return
+        if self.playing:
+            elapsed_time = time.time() - self.start_time
+            frame_number = int(elapsed_time * self.fps)
+            self.cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
             ret, frame = self.cap.read()
             if ret:
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                frame = cv2.resize(frame, (720, 560))  # Resize the frame to match the canvas size
-                img = Image.fromarray(frame)
+                self.current_frame = frame
+                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                # Calculate the resize dimensions while maintaining the aspect ratio
+                canvas_width = self.canvas.winfo_width()
+                canvas_height = self.canvas.winfo_height()
+                frame_height, frame_width, _ = frame_rgb.shape
+                scale_w = canvas_width / frame_width
+                scale_h = canvas_height / frame_height
+                scale = min(scale_w, scale_h)
+                new_width = int(frame_width * scale)
+                new_height = int(frame_height * scale)
+                resized_frame = cv2.resize(frame_rgb, (new_width, new_height))
+                img = Image.fromarray(resized_frame)
                 imgtk = ImageTk.PhotoImage(image=img)
-                self.video_canvas.create_image(0, 0, anchor=NW, image=imgtk)
-                self.video_canvas.image = imgtk
-
-                # Update speaker images based on detected frames
-                self.update_speakers(frame)
+                self.canvas.create_image(0, 0, anchor=NW, image=imgtk)
+                self.canvas.image = imgtk
+                self.update_zoomed_face()
             else:
-                break
-            time.sleep(1/30)  # Control the frame rate
+                self.cap.release()  # Release the video capture object
+                self.playing = False  # Stop the video playback
+        self.window.after(self.interval, self.update_video_display)
 
-    def update_speakers(self, frame):
-        # Logic to update speakers based on frame
-        for person in all_persons:
-            if person.get_is_talking() == 2:
-                if self.cap.get(cv2.CAP_PROP_POS_FRAMES) == person.get_frame_number():
-                    img = Image.open(f"speaker_{person.get_label()}.png")
-                    img_tk = ImageTk.PhotoImage(img)
-                    self.speaker_canvases[person.get_label()].create_image(0, 0, anchor=NW, image=img_tk)
-                    self.speaker_canvases[person.get_label()].image = img_tk
+    def update_zoomed_face(self):
+        if self.current_frame is not None:
+            for person in all_persons:
+                if person.get_frame_number() == int(self.cap.get(cv2.CAP_PROP_POS_FRAMES)):
+                    x1, y1, x2, y2 = person.get_bounding_box()
+                    zoomed_face = self.current_frame[y1:y2, x1:x2]
+                    zoomed_face_rgb = cv2.cvtColor(zoomed_face, cv2.COLOR_BGR2RGB)
+                    # Calculate the resize dimensions while maintaining the aspect ratio
+                    right_canvas_width = self.right_canvas.winfo_width()
+                    right_canvas_height = self.right_canvas.winfo_height()
+                    face_height, face_width, _ = zoomed_face_rgb.shape
+                    scale_w = right_canvas_width / face_width
+                    scale_h = right_canvas_height / face_height
+                    scale = min(scale_w, scale_h)
+                    new_face_width = int(face_width * scale)
+                    new_face_height = int(face_height * scale)
+                    resized_zoomed_face = cv2.resize(zoomed_face_rgb, (new_face_width, new_face_height))
+                    zoomed_img = Image.fromarray(resized_zoomed_face)
+                    self.zoomed_image = ImageTk.PhotoImage(image=zoomed_img)
+                    self.right_canvas.create_image(0, 0, anchor=NW, image=self.zoomed_image)
+                    self.right_canvas.image = self.zoomed_image
+                    break
+
                     
 # ---------------------------------------------------------------------------------------------------------------------------
 
