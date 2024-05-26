@@ -1,6 +1,6 @@
 class Person:
 
-    def __init__(self, face_vector, frame_number, lip_seperation, bounding_box, face_coordinates, talking=1, label=None):
+    def __init__(self, face_vector, frame_number, lip_seperation, bounding_box, face_coordinates, talking=0, label=None):
 
         if (face_coordinates == []):
             face_coordinates = (0, 0) * 68

@@ -167,13 +167,13 @@ def sort_Detected_Sequences(all_Sequences):
     
 def update_persons(all_Sequences):
     for sequence in all_Sequences: # Loops though every sequence
-        if sequence[2] == 1:
             for frame in sequence[1]: # Loops though every frame number in the sequence
                 for person in all_persons: # Loops though every person
                     if (person.get_label() == sequence[0]) and (person.get_frame_number() == frame): # If the person label matches the sequence label
-                        person.set_is_talking(2)
-                    # else:
-                    #     person.set_is_talking(1)
+                        if sequence[2] == 1:# else:
+                            person.set_is_talking(2)                    #     person is talking
+                        if sequence[2] == 0:# else:
+                            person.set_is_talking(1)                    #     person not talking
 
 
 class GUI:
