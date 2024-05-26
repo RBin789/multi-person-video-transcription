@@ -133,51 +133,61 @@ def update_persons(all_Sequences):
 
 class GUI:
     def __init__(self):
-        self.run_gui()
         self.selected_file = None
         self.output_video_path = None
         self.number_people = None
         self.playing = False
-        self.queue = Queue()
-        self.update_gui()
+        self.run_gui()
 
     def run_gui(self):
-        # Create a Window.
-        self.MyWindow = Tk()  # Create a window
+        self.MyWindow = tk.Tk()  # Create a window
         self.MyWindow.title("Multi Person Video Transcription")  # Change the Title of the GUI
-        self.MyWindow.geometry('800x400')  # Set the size of the Windows
+        self.MyWindow.geometry('800x500')  # Set the size of the window
 
-        # Create a new frame
-        centered_frame = Frame(self.MyWindow, height=self.MyWindow.winfo_screenheight())
-        centered_frame.pack(pady=(self.MyWindow.winfo_screenheight() - centered_frame.winfo_reqheight()) // 2)
+        # Create main layout
+        self.main_frame = Frame(self.MyWindow, bg='#f0f0f0')
+        self.main_frame.pack(fill=BOTH, expand=True, padx=20, pady=20)
 
-        # Create GUI elements
-        titleText = Label(centered_frame, text="Convert a video to a transcript", font=("Arial Bold", 20))
-        titleText.pack(pady=20)
+        # Top frame for labels
+        self.top_frame = Frame(self.main_frame, bg='#f0f0f0', height=100)
+        self.top_frame.pack(fill=X, side=TOP, expand=False)
 
-        descriptionText = Label(centered_frame, text="This tool allows you to convert a video to a transcript. To get started press the open video button.", font=("Arial Bold", 10))
-        descriptionText.pack(pady=10)
+        # Title label
+        self.title_label = Label(self.top_frame, text="Convert a video to a transcript", font=("Arial", 20, "bold"), fg="#333333", bg='#f0f0f0')
+        self.title_label.pack(side=TOP, pady=10)
 
-        # Button to Open Video
-        openVideoBtn = Button(centered_frame, text="Open Video", command=self.BtnOpen_Clicked)
-        openVideoBtn.pack(pady=10)
+        # Description label
+        self.description_label = Label(self.top_frame, text="This tool allows you to convert a video to a transcript. To get started, press the open video button.", font=("Arial", 10), fg="#666666", bg='#f0f0f0')
+        self.description_label.pack(side=TOP, pady=10)
+
+        # Middle frame for input elements
+        self.middle_frame = Frame(self.main_frame, bg='#f0f0f0', height=200)
+        self.middle_frame.pack(fill=BOTH, expand=True, pady=20)
+
+        # Button to open video
+        self.open_video_btn = Button(self.middle_frame, text="Open Video", command=self.BtnOpen_Clicked, font=("Arial", 14), bg='#cccccc', fg='#333333')
+        self.open_video_btn.pack(pady=10)
 
         # Label for number of people
-        peopleInputLabel = Label(centered_frame, text="Enter the amount of unique people who appear in the video:", font=("Arial Bold", 10))
-        peopleInputLabel.pack(pady=10)
+        self.people_input_label = Label(self.middle_frame, text="Enter the number of unique people who appear in the video:", font=("Arial", 10), fg='#666666', bg='#f0f0f0')
+        self.people_input_label.pack(pady=10)
 
-        # Text box for user input
-        self.numberEntry = Entry(centered_frame, width=20)  # Create entry widget for number input
-        self.numberEntry.pack(pady=10)
-        self.numberEntry.insert(0, "")  # Set initial text in the entry
+        # Entry box for user input
+        self.number_entry = Entry(self.middle_frame, width=20, font=("Arial", 12), bg='#ffffff', fg='#333333')
+        self.number_entry.pack(pady=10)
+        self.number_entry.insert(0, "")
 
-        # Start Button (initially disabled)
-        self.startButton = Button(centered_frame, text="Start", state=DISABLED, command=self.BtnStart_Clicked)
-        self.startButton.pack(pady=10)
+        # Start button (initially disabled)
+        self.start_button = Button(self.middle_frame, text="Start", state=DISABLED, command=self.BtnStart_Clicked, font=("Arial", 14), bg='#e0e0e0', fg='#999999')
+        self.start_button.pack(pady=10)
 
-        # Next Button (initially disabled)
-        self.nextButton = Button(centered_frame, text="Next", state=DISABLED, command=self.BtnNext_Clicked)
-        self.nextButton.pack(pady=10)
+        # Bottom frame for control buttons
+        self.bottom_frame = Frame(self.main_frame, bg='#f0f0f0', height=50)
+        self.bottom_frame.pack(fill=X, side=BOTTOM, pady=10, expand=False)
+
+        # Next button (initially disabled)
+        self.next_button = Button(self.bottom_frame, text="Next", state=DISABLED, command=self.BtnNext_Clicked, font=("Arial", 14), bg='#e0e0e0', fg='#999999')
+        self.next_button.pack(side=RIGHT, padx=10, pady=5)
 
         # Calling the mainloop()
         self.MyWindow.mainloop()
@@ -191,19 +201,16 @@ class GUI:
 
         if file_path:  # Check if a file was selected
             self.selected_file = file_path
-            self.startButton.config(state=NORMAL)  # Enable Start button after selecting video
-            self.nextButton.config(state=NORMAL)  # Enable Next button after selecting video
+            self.start_button.config(state=NORMAL, bg='#cccccc', fg='#333333')  # Enable Start button after selecting video
+            self.next_button.config(state=NORMAL, bg='#cccccc', fg='#333333')  # Enable Next button after selecting video
 
     def BtnStart_Clicked(self):
-        # Access the entered number using self.numberEntry.get()
-        self.number_people = int(self.numberEntry.get())
+        # Access the entered number using self.number_entry.get()
+        self.number_people = int(self.number_entry.get())
         print(f"Processing video with num people being: {self.number_people}")
 
         # Process the video
         process_video(self.selected_file)
-
-        # Process Audio
-        # audiototext = audioToText(self.selected_file)
 
         # K-means clustering on face vectors
         clustered_data = peform_kmeans_clustering(all_persons, self.number_people)
@@ -221,9 +228,6 @@ class GUI:
 
         create_processed_video = CreateProcessedVideo(self.selected_file, all_persons, all_Sequences)
         self.output_video_path = self.selected_file + "_modified.mp4"
-
-        # Next Button (initially enabled)
-        self.nextButton.config(state=NORMAL)  # Enable Next button after processing
 
         messagebox.showinfo("Finished", "The video transcription has been completed.", parent=self.MyWindow)
 
@@ -295,9 +299,9 @@ class SecondGUI:
         self.bottom_frame = Frame(self.main_frame, bg='#ffffff', height=50)
         self.bottom_frame.pack(fill=X, side=BOTTOM, pady=10, expand=False)
 
-        self.play_button = Button(self.bottom_frame, text="play", font=("Arial", 14), command=self.play_video, width=10, bg='#A9A9A9', fg='white')
+        self.play_button = Button(self.bottom_frame, text="play", font=("Arial", 14), command=self.play_video, width=10, bg='#cccccc', fg='#333333')
         self.play_button.pack(side=LEFT, padx=20, pady=5, anchor='sw')
-        self.stop_button = Button(self.bottom_frame, text="stop", font=("Arial", 14), command=self.stop_video, width=10, bg='#A9A9A9', fg='white')
+        self.stop_button = Button(self.bottom_frame, text="stop", font=("Arial", 14), command=self.stop_video, width=10, bg='#cccccc', fg='#333333')
         self.stop_button.pack(side=LEFT, padx=20, pady=5, anchor='sw')
 
         self.update_video_display()  # Update the display
