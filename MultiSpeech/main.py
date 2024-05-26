@@ -238,7 +238,7 @@ class SecondGUI:
     def __init__(self, video_path, number_people):
         self.window = tk.Tk()
         self.window.title("Video Analysis Result")
-        self.window.geometry("1200x800")
+        self.window.geometry("1600x900")
 
         self.playing = False
         self.cap = cv2.VideoCapture(video_path)
@@ -258,7 +258,7 @@ class SecondGUI:
         self.main_frame.pack(fill=BOTH, expand=True, padx=20, pady=20)
 
         # Top frame for labels
-        self.top_frame = Frame(self.main_frame, bg='#ffffff', height=150)
+        self.top_frame = Frame(self.main_frame, bg='#ffffff', height=200)
         self.top_frame.pack(fill=X, side=TOP, expand=False)
 
         # Modified video label
@@ -267,16 +267,16 @@ class SecondGUI:
 
         # Zoomed face label
         self.zoomed_face_label = Label(self.top_frame, text="Zoomed face", font=("Arial", 16, "bold"), fg="black", bg='#ffffff')
-        self.zoomed_face_label.place(x=820, y=0)  # Use place to position it at the top left of the right frame
+        self.zoomed_face_label.place(x=1220, y=0)
 
         # Middle frame for video displays
         self.middle_frame = Frame(self.main_frame, bg='#ffffff', height=600)
         self.middle_frame.pack(fill=BOTH, expand=True, pady=(10, 0))
 
-        # Left frame for the modified video
-        self.left_frame = Frame(self.middle_frame, width=840, height=600, bg='#ffffff', relief='ridge', bd=2)
+        # Left frame for the modified video (1920x1080 aspect ratio)
+        self.left_frame = Frame(self.middle_frame, width=1152, height=648, bg='#ffffff', relief='ridge', bd=2)
         self.left_frame.pack(side=LEFT, padx=20, pady=20, expand=True, fill=BOTH)
-        self.canvas = Canvas(self.left_frame, width=840, height=600, bg='#ffffff')
+        self.canvas = Canvas(self.left_frame, width=1152, height=648, bg='#ffffff')
         self.canvas.pack(expand=True, fill=BOTH)
 
         # Right frame for the zoomed face
@@ -288,7 +288,7 @@ class SecondGUI:
         # Empty text box frame
         self.text_box_frame = Frame(self.right_frame, width=360, height=320, bg='#ffffff', relief='ridge', bd=2)
         self.text_box_frame.pack(pady=10, expand=True, fill=BOTH)
-        self.text_box_label = Label(self.text_box_frame, text="leave the box empty", font=("Arial", 16, "bold"), fg="grey", bg='#ffffff')
+        self.text_box_label = Label(self.text_box_frame, text="This box is planned for text", font=("Arial", 16, "bold"), fg="grey", bg='#ffffff')
         self.text_box_label.pack()
 
         # Bottom frame for control buttons
@@ -296,10 +296,9 @@ class SecondGUI:
         self.bottom_frame.pack(fill=X, side=BOTTOM, pady=10, expand=False)
 
         self.play_button = Button(self.bottom_frame, text="play", font=("Arial", 14), command=self.play_video, width=10, bg='#A9A9A9', fg='white')
-        self.play_button.pack(side=LEFT, padx=10, pady=5, anchor='sw')
+        self.play_button.pack(side=LEFT, padx=20, pady=5, anchor='sw')
         self.stop_button = Button(self.bottom_frame, text="stop", font=("Arial", 14), command=self.stop_video, width=10, bg='#A9A9A9', fg='white')
-        self.stop_button.pack(side=LEFT, padx=10, pady=5, anchor='sw')
-
+        self.stop_button.pack(side=LEFT, padx=20, pady=5, anchor='sw')
 
         self.update_video_display()  # Update the display
         self.window.mainloop()
