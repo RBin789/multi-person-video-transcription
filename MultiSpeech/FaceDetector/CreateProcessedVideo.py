@@ -42,7 +42,7 @@ class CreateProcessedVideo:
         label = "Person: " + str(label)
         
         # Draw frame counter
-        self.draw_text(draw, (self.video_width - 100), 20, "Frame: " + str(self.current_frame_num), (255, 0, 0))
+        self.draw_text(draw, (self.video_width - 250), 20, "Frame: " + str(self.current_frame_num), (255, 0, 0))
 
         x1, y1, x2, y2 = bounding_box
         if talking == 2:
