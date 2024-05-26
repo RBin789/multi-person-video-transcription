@@ -8,12 +8,17 @@ class CreateProcessedVideo:
         self.all_persons = all_persons
         self.all_sequences = all_sequences
         self.current_frame_num = 0
+        self.video_width = 0
+        self.video_height = 0
 
         self.process_video()
 
     def process_video(self):
         # Load the video file
         video = VideoFileClip(self.video_path)
+        width, height = video.size
+        self.video_width = width
+        self.video_height = height
         
         # Define a function to process each frame
         def process_frame(get_frame, t):
@@ -37,7 +42,7 @@ class CreateProcessedVideo:
         label = "Person: " + str(label)
         
         # Draw frame counter
-        self.draw_text(draw, 20, 20, "Frame: " + str(self.current_frame_num), (255, 0, 0))
+        self.draw_text(draw, (self.video_width - 100), 20, "Frame: " + str(self.current_frame_num), (255, 0, 0))
 
         x1, y1, x2, y2 = bounding_box
         if talking == 2:
