@@ -14,7 +14,6 @@ from tensorflow import keras
 from FaceDetector.Face2Vec import *
 from FaceDetector.Sequence_Generation import *
 from FaceDetector.Lip_Detection import *
-from FaceDetector.audioToText import *
 from FaceDetector.Person import *
 from FaceDetector.CreateProcessedVideo import *
 from ultralytics import YOLO
