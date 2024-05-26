@@ -71,5 +71,5 @@ class CreateProcessedVideo:
             font = ImageFont.truetype("arial.ttf", 30)
             draw.text((x, y), label, fill=color, font=font)
         except Exception as e:
-            print(f"Error loading font: {e}")
+            # print(f"Error loading font: {e}")
             draw.text((x, y), label, fill=color)
