@@ -270,7 +270,7 @@ class SecondGUI:
         self.modified_video_label.pack(side=LEFT, padx=20, anchor='nw')
 
         # Zoomed face label
-        self.zoomed_face_label = Label(self.top_frame, text="Zoomed face", font=("Arial", 16, "bold"), fg="black", bg='#ffffff')
+        self.zoomed_face_label = Label(self.top_frame, text="Current Speaker", font=("Arial", 16, "bold"), fg="black", bg='#ffffff')
         self.zoomed_face_label.place(x=1220, y=0)
 
         # Middle frame for video displays

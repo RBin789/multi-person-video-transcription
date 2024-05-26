@@ -106,4 +106,4 @@ class GUI:
         self.cap = cv2.VideoCapture(self.selected_file)
 
         right_frame = Frame(self.second_window, width=480, height=800)
-        right_frame.pack(side=RIGHT
+        right_frame.pack(side=RIGHT)
