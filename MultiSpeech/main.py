@@ -24,11 +24,57 @@ from threading import Thread
 import pygame
 import tkinter as tk
 from tkinter import Label, Button, Canvas, Frame
+from vosk import Model, KaldiRecognizer
+from pydub import AudioSegment
+import wave
+import json
 
 all_persons = []
 all_Sequences = []
 selected_file = None  # Initialize variable to store video path
 lip_detection_model = tf.keras.models.load_model("MultiSpeech/FaceDetector/models/lip_detection_model.keras")
+
+# Function to convert audio to required format
+def convert_audio(audio_path):
+    sound = AudioSegment.from_file(audio_path)
+    sound = sound.set_channels(1)
+    sound = sound.set_frame_rate(16000)
+    converted_path = audio_path.replace(".wav", "_16k.wav")
+    sound.export(converted_path, format="wav")
+    return converted_path
+
+# Function to convert audio to text using Vosk with timestamps
+def audio_to_text(audio_path):
+    model_path = "MultiSpeech/FaceDetector/models/vosk-model-small-en-us-0.15"  # Update with the path to your Vosk model directory
+    if not os.path.exists(model_path):
+        print(f"Model not found at {model_path}, please download and unzip the model from https://alphacephei.com/vosk/models")
+        return []
+    
+    model = Model(model_path)
+    recognizer = KaldiRecognizer(model, 16000)
+    recognizer.SetWords(True)
+
+    audio_path = convert_audio(audio_path)
+
+    wf = wave.open(audio_path, "rb")
+    results = []
+
+    while True:
+        data = wf.readframes(4000)
+        if len(data) == 0:
+            break
+        if recognizer.AcceptWaveform(data):
+            results.append(json.loads(recognizer.Result()))
+    
+    results.append(json.loads(recognizer.FinalResult()))
+    wf.close()
+
+    transcriptions = []
+    for result in results:
+        if 'result' in result:
+            for word_info in result['result']:
+                transcriptions.append((word_info['start'], word_info['end'], word_info['word']))
+    return transcriptions
 
 def process_video(video_path):
 
@@ -136,110 +182,93 @@ class GUI:
         self.selected_file = None
         self.output_video_path = None
         self.number_people = None
+        self.transcriptions = []
         self.playing = False
         self.run_gui()
 
     def run_gui(self):
-        self.MyWindow = tk.Tk()  # Create a window
-        self.MyWindow.title("Multi Person Video Transcription")  # Change the Title of the GUI
-        self.MyWindow.geometry('800x500')  # Set the size of the window
+        self.MyWindow = tk.Tk()
+        self.MyWindow.title("Multi Person Video Transcription")
+        self.MyWindow.geometry('800x500')
 
-        # Create main layout
         self.main_frame = Frame(self.MyWindow, bg='#f0f0f0')
         self.main_frame.pack(fill=BOTH, expand=True, padx=20, pady=20)
 
-        # Top frame for labels
         self.top_frame = Frame(self.main_frame, bg='#f0f0f0', height=100)
         self.top_frame.pack(fill=X, side=TOP, expand=False)
 
-        # Title label
         self.title_label = Label(self.top_frame, text="Convert a video to a transcript", font=("Arial", 20, "bold"), fg="#333333", bg='#f0f0f0')
         self.title_label.pack(side=TOP, pady=10)
 
-        # Description label
         self.description_label = Label(self.top_frame, text="This tool allows you to convert a video to a transcript. To get started, press the open video button.", font=("Arial", 10), fg="#666666", bg='#f0f0f0')
         self.description_label.pack(side=TOP, pady=10)
 
-        # Middle frame for input elements
         self.middle_frame = Frame(self.main_frame, bg='#f0f0f0', height=200)
         self.middle_frame.pack(fill=BOTH, expand=True, pady=20)
 
-        # Button to open video
         self.open_video_btn = Button(self.middle_frame, text="Open Video", command=self.BtnOpen_Clicked, font=("Arial", 14), bg='#cccccc', fg='#333333')
         self.open_video_btn.pack(pady=10)
 
-        # Label for number of people
         self.people_input_label = Label(self.middle_frame, text="Enter the number of unique people who appear in the video:", font=("Arial", 10), fg='#666666', bg='#f0f0f0')
         self.people_input_label.pack(pady=10)
 
-        # Entry box for user input
         self.number_entry = Entry(self.middle_frame, width=20, font=("Arial", 12), bg='#ffffff', fg='#333333')
         self.number_entry.pack(pady=10)
         self.number_entry.insert(0, "")
 
-        # Start button (initially disabled)
         self.start_button = Button(self.middle_frame, text="Start", state=DISABLED, command=self.BtnStart_Clicked, font=("Arial", 14), bg='#e0e0e0', fg='#999999')
         self.start_button.pack(pady=10)
 
-        # Bottom frame for control buttons
         self.bottom_frame = Frame(self.main_frame, bg='#f0f0f0', height=50)
         self.bottom_frame.pack(fill=X, side=BOTTOM, pady=10, expand=False)
 
-        # Next button (initially disabled)
         self.next_button = Button(self.bottom_frame, text="Next", state=DISABLED, command=self.BtnNext_Clicked, font=("Arial", 14), bg='#e0e0e0', fg='#999999')
         self.next_button.pack(side=RIGHT, padx=10, pady=5)
 
-        # Calling the mainloop()
         self.MyWindow.mainloop()
 
     def BtnOpen_Clicked(self):
-        # Specify video file types
         filetypes = [("Video files", "*.mp4")]
-
         file_path = filedialog.askopenfilename(filetypes=filetypes)
         print(file_path)
 
-        if file_path:  # Check if a file was selected
+        if file_path:
             self.selected_file = file_path
-            self.start_button.config(state=NORMAL, bg='#cccccc', fg='#333333')  # Enable Start button after selecting video
-            self.next_button.config(state=NORMAL, bg='#cccccc', fg='#333333')  # Enable Next button after selecting video
+            self.start_button.config(state=NORMAL, bg='#cccccc', fg='#333333')
+            self.next_button.config(state=NORMAL, bg='#cccccc', fg='#333333')
 
     def BtnStart_Clicked(self):
-        # Access the entered number using self.number_entry.get()
         self.number_people = int(self.number_entry.get())
         print(f"Processing video with num people being: {self.number_people}")
 
-        # Process the video
         process_video(self.selected_file)
-
-        # K-means clustering on face vectors
         clustered_data = peform_kmeans_clustering(all_persons, self.number_people)
         clustered_by_label = split_data_by_cluster(clustered_data)
-
-        # Generate sequences for each person and run lip detection
         process_clustered_data(clustered_by_label, lip_detection_model)
-
-        # Sort all_Sequences by frame numbers
         sort_Detected_Sequences(all_Sequences)
-
         print("All Sequences sorted: ", all_Sequences)
-
-        update_persons(all_Sequences)  # Update the persons with the talking frames labels
+        update_persons(all_Sequences)
 
         create_processed_video = CreateProcessedVideo(self.selected_file, all_persons, all_Sequences)
         self.output_video_path = self.selected_file + "_modified.mp4"
+
+        # Audio to text conversion
+        self.audio_path = self.selected_file.replace(".mp4", "_16k.wav")
+        video_clip = VideoFileClip(self.selected_file)
+        video_clip.audio.write_audiofile(self.audio_path.replace("_16k.wav", ".wav"))
+        self.transcriptions = audio_to_text(self.audio_path.replace("_16k.wav", ".wav"))
 
         messagebox.showinfo("Finished", "The video transcription has been completed.", parent=self.MyWindow)
 
     def BtnNext_Clicked(self):
         self.MyWindow.destroy()
-        self.open_second_gui(self.output_video_path, self.number_people)
+        self.open_second_gui(self.output_video_path, self.number_people, self.transcriptions)
 
-    def open_second_gui(self, video_path, number_people):
-        SecondGUI(video_path, number_people)
+    def open_second_gui(self, video_path, number_people, transcriptions):
+        SecondGUI(video_path, number_people, transcriptions)
 
 class SecondGUI:
-    def __init__(self, video_path, number_people):
+    def __init__(self, video_path, number_people, transcriptions):
         self.window = tk.Tk()
         self.window.title("Video Analysis Result")
         self.window.geometry("1600x900")
@@ -247,55 +276,48 @@ class SecondGUI:
         self.playing = False
         self.cap = cv2.VideoCapture(video_path)
         self.current_frame = None
-        self.fps = self.cap.get(cv2.CAP_PROP_FPS)  # Get the FPS of the video
-        self.interval = int(1000 / self.fps)  # Calculate the interval in milliseconds
+        self.fps = self.cap.get(cv2.CAP_PROP_FPS)
+        self.interval = int(1000 / self.fps)
 
-        # Extract audio from video
         self.audio_thread = None
         self.audio_path = video_path.replace(".mp4", ".wav")
         video_clip = VideoFileClip(video_path)
         video_clip.audio.write_audiofile(self.audio_path)
         print(f"Audio path: {self.audio_path}")
 
-        # Create main layout
+        self.transcriptions = transcriptions
+        self.transcriptions_index = 0
+
         self.main_frame = Frame(self.window, bg='#ffffff')
         self.main_frame.pack(fill=BOTH, expand=True, padx=20, pady=20)
 
-        # Top frame for labels
         self.top_frame = Frame(self.main_frame, bg='#ffffff', height=200)
         self.top_frame.pack(fill=X, side=TOP, expand=False)
 
-        # Modified video label
         self.modified_video_label = Label(self.top_frame, text="Modified Video", font=("Arial", 16, "bold"), fg="black", bg='#ffffff')
         self.modified_video_label.pack(side=LEFT, padx=20, anchor='nw')
 
-        # Zoomed face label
-        self.zoomed_face_label = Label(self.top_frame, text="Zoomed face", font=("Arial", 16, "bold"), fg="black", bg='#ffffff')
+        self.zoomed_face_label = Label(self.top_frame, text="Current Speaker", font=("Arial", 16, "bold"), fg="black", bg='#ffffff')
         self.zoomed_face_label.place(x=1220, y=0)
 
-        # Middle frame for video displays
         self.middle_frame = Frame(self.main_frame, bg='#ffffff', height=600)
         self.middle_frame.pack(fill=BOTH, expand=True, pady=(10, 0))
 
-        # Left frame for the modified video (1920x1080 aspect ratio)
         self.left_frame = Frame(self.middle_frame, width=1152, height=648, bg='#ffffff', relief='ridge', bd=2)
         self.left_frame.pack(side=LEFT, padx=20, pady=20, expand=True, fill=BOTH)
         self.canvas = Canvas(self.left_frame, width=1152, height=648, bg='#ffffff')
         self.canvas.pack(expand=True, fill=BOTH)
 
-        # Right frame for the zoomed face
         self.right_frame = Frame(self.middle_frame, width=360, height=320, bg='#ffffff', relief='ridge', bd=2)
         self.right_frame.pack(side=RIGHT, padx=20, pady=20, expand=True, fill=BOTH)
         self.right_canvas = Canvas(self.right_frame, width=360, height=320, bg='#ffffff')
         self.right_canvas.pack(expand=True, fill=BOTH)
 
-        # Empty text box frame
         self.text_box_frame = Frame(self.right_frame, width=360, height=320, bg='#ffffff', relief='ridge', bd=2)
         self.text_box_frame.pack(pady=10, expand=True, fill=BOTH)
-        self.text_box_label = Label(self.text_box_frame, text="This box is planned for text", font=("Arial", 16, "bold"), fg="grey", bg='#ffffff')
+        self.text_box_label = Label(self.text_box_frame, text="Transcription will appear here", font=("Arial", 16, "bold"), fg="black", bg='#ffffff')
         self.text_box_label.pack()
 
-        # Bottom frame for control buttons
         self.bottom_frame = Frame(self.main_frame, bg='#ffffff', height=50)
         self.bottom_frame.pack(fill=X, side=BOTTOM, pady=10, expand=False)
 
@@ -304,29 +326,29 @@ class SecondGUI:
         self.stop_button = Button(self.bottom_frame, text="stop", font=("Arial", 14), command=self.stop_video, width=10, bg='#cccccc', fg='#333333')
         self.stop_button.pack(side=LEFT, padx=20, pady=5, anchor='sw')
 
-        self.update_video_display()  # Update the display
+        self.update_video_display()
         self.window.mainloop()
 
     def play_audio(self):
         pygame.mixer.music.load(self.audio_path)
         pygame.mixer.music.play()
-        pygame.mixer.music.set_endevent(pygame.USEREVENT)  # Set event for audio end
+        pygame.mixer.music.set_endevent(pygame.USEREVENT)
         print("Playing audio")
 
     def play_video(self):
         self.playing = True
-        self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)  # Reset the video to the first frame
-        self.start_time = time.time()  # Record the start time
+        self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        self.start_time = time.time()
 
         if self.audio_thread is None or not self.audio_thread.is_alive():
             self.audio_thread = Thread(target=self.play_audio)
             self.audio_thread.start()
             print("Started audio thread")
         else:
-            pygame.mixer.music.stop()  # Stop the current audio
-            pygame.mixer.music.play()  # Replay the audio
-            self.start_time = time.time()  # Reset the start time for synchronization
-            self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)  # Reset the video to the first frame again for synchronization
+            pygame.mixer.music.stop()
+            pygame.mixer.music.play()
+            self.start_time = time.time()
+            self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
             print("Rewind and play audio")
 
     def stop_video(self):
@@ -341,7 +363,7 @@ class SecondGUI:
     def update_video_display(self):
         for event in pygame.event.get():
             if event.type == pygame.USEREVENT:
-                self.stop_video()  # Stop video when audio ends
+                self.stop_video()
                 return
         if self.playing:
             elapsed_time = time.time() - self.start_time
@@ -351,7 +373,6 @@ class SecondGUI:
             if ret:
                 self.current_frame = frame
                 frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                # Calculate the resize dimensions while maintaining the aspect ratio
                 canvas_width = self.canvas.winfo_width()
                 canvas_height = self.canvas.winfo_height()
                 frame_height, frame_width, _ = frame_rgb.shape
@@ -366,9 +387,10 @@ class SecondGUI:
                 self.canvas.create_image(0, 0, anchor=NW, image=imgtk)
                 self.canvas.image = imgtk
                 self.update_zoomed_face()
+                self.update_transcription(elapsed_time)
             else:
-                self.cap.release()  # Release the video capture object
-                self.playing = False  # Stop the video playback
+                self.cap.release()
+                self.playing = False
         self.window.after(self.interval, self.update_video_display)
 
     def update_zoomed_face(self):
@@ -378,7 +400,6 @@ class SecondGUI:
                     x1, y1, x2, y2 = person.get_bounding_box()
                     zoomed_face = self.current_frame[y1:y2, x1:x2]
                     zoomed_face_rgb = cv2.cvtColor(zoomed_face, cv2.COLOR_BGR2RGB)
-                    # Calculate the resize dimensions while maintaining the aspect ratio
                     right_canvas_width = self.right_canvas.winfo_width()
                     right_canvas_height = self.right_canvas.winfo_height()
                     face_height, face_width, _ = zoomed_face_rgb.shape
@@ -394,6 +415,13 @@ class SecondGUI:
                     self.right_canvas.image = self.zoomed_image
                     break
 
+    def update_transcription(self, elapsed_time):
+        current_time = elapsed_time
+        current_transcription = ""
+        for start, end, word in self.transcriptions:
+            if start <= current_time <= end:
+                current_transcription += word + " "
+        self.text_box_label.config(text=current_transcription)
                     
 # ---------------------------------------------------------------------------------------------------------------------------
 
