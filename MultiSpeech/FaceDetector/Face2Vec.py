@@ -200,6 +200,7 @@ class Face2Vec:
         for j, keypoints in enumerate(self.face_keypoints):
             if len(keypoints) != 0: # This is to check for head but no face
                 tensor = self.all_euclidian(keypoints, self.bounding_boxs[j][0])
+                tensor = tensor.flatten()
                 try:
                     self.face_features.append((tensor, self.current_frame_num, self.lip_seperation[j], self.bounding_boxs[j], self.face_keypoints[j]))
                 except:

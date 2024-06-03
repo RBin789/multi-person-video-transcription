@@ -12,10 +12,9 @@ sys.path.insert(0, 'MultiSpeech\FaceDetector')
 import tensorflow as tf
 from tensorflow import keras
 from FaceDetector.Face2Vec import *
-from FaceDetector.Sequence_Generation import *
-from FaceDetector.Lip_Detection import *
 from FaceDetector.Person import *
-from FaceDetector.CreateProcessedVideo import *
+from FaceDetector.FaceSequenceProcessor import *
+from FaceDetector.Face import *
 from ultralytics import YOLO
 from PIL import Image, ImageTk, ImageOps
 from moviepy.editor import VideoFileClip
@@ -28,8 +27,7 @@ from pydub import AudioSegment
 import wave
 import json
 
-all_persons = []
-all_Sequences = []
+all_faces = []
 selected_file = None  # Initialize variable to store video path
 lip_detection_model = tf.keras.models.load_model("MultiSpeech/FaceDetector/models/lip_detection_model.keras")
 
@@ -99,11 +97,11 @@ def process_video(video_path):
         face_features = face2vec.get_face_features()
 
         for faceid, face_features in enumerate(face_features):
-            person = Person(face_features[0], face_features[1], face_features[2], face_features[3], face_features[4]) # Create a new person object (face vector, frame number, lip_seperation, bounding_box, face_coordinates)
-            all_persons.append(person)
+            face = Face(face_features[0], face_features[1], face_features[2], face_features[3], face_features[4]) # Create a new person object (face vector, frame number, lip_seperation, bounding_box, face_coordinates)
+            all_faces.append(face)
             print("face: " + str(faceid))
-            print("lipSep: " + str(person.get_lip_seperation()))
-            print("boundBox: " + str(person.get_bounding_box()))
+            print("lipSep: " + str(face.get_lip_seperation()))
+            print("boundBox: " + str(face.get_bounding_box()))
             print()
         
         success, frame = video.read()
@@ -114,83 +112,8 @@ def process_video(video_path):
     video.release()
     cv2.destroyAllWindows()
 
-def peform_kmeans_clustering(all_persons, num_people):
-    # Extract vectors from the list
-    vectors = [face_vector.get_face_vector().flatten() for face_vector in all_persons]
-
-    # Convert the list of vectors to a NumPy array
-    vector_array = np.array(vectors)
-    print(vector_array)
-    print(vector_array.shape)
-
-    # Create the KMeans model
-    kmeans = KMeans(n_clusters=num_people)
-
-    # Fit the model to the data (vectors only)
-    kmeans.fit(vector_array)
-
-    # Get the cluster labels for each vector
-    cluster_labels = kmeans.labels_
-
-    # Create a new list to store clustered data
-    clustered_data = []
-
-    # Assign cluster labels and preserve structure
-    for item, label in zip(all_persons, cluster_labels):
-        clustered_data.append([item.get_face_vector(), item.get_frame_number(), item.get_lip_seperation(), label])
-        item.set_label(label)
-
-    # Plotting the clusters
-    plt.scatter(vector_array[:, 0], vector_array[:, 1], c=cluster_labels, cmap='viridis')
-    centers = kmeans.cluster_centers_
-    plt.scatter(centers[:, 0], centers[:, 1], c='black', s=200, alpha=0.5)
-    plt.show() 
-
-    return clustered_data
-
-def split_data_by_cluster(clustered_data):
-    clustered_by_label = {}
-    for item in clustered_data:
-        cluster_label = item[3]  # Access the cluster label from the 4th element
-        if cluster_label not in clustered_by_label:
-            clustered_by_label[cluster_label] = []
-        clustered_by_label[cluster_label].append(item)
-    return clustered_by_label # A dictionary where keys are cluster labels and values are lists of data points belonging to that cluster.
-
 def run_gui():
     app = GUI()
-
-def process_clustered_data(clustered_by_label, model):
-    for cluster_label, cluster_data in clustered_by_label.items():
-        person_sequences = sequence_generation(cluster_label, cluster_data) # all of one persons sequences
-        run_lip_detection(person_sequences, cluster_label, model)
-
-def sequence_generation(face_vectors, cluster_label):
-    # Generate sequences
-    sequence_generation = Sequence_Generation(face_vectors, cluster_label)
-    person_sequences = sequence_generation.get_person_sequences()
-    return person_sequences
-
-def run_lip_detection(person_sequences, cluster_label, model):
-    for i, sequence in enumerate(person_sequences): # Loops though every sequence of a person
-        if (len(sequence) == 0):
-            continue
-        lip_detection = Lip_Detection(sequence, cluster_label, model)
-        all_Sequences.append(lip_detection.get_sequence_and_prediction())
-
-def sort_Detected_Sequences(all_Sequences):
-    all_Sequences.sort(key=lambda x: x[1])  # Sort by frame number
-    
-def update_persons(all_Sequences):
-    for sequence in all_Sequences: # Loops though every sequence
-            for frame in sequence[1]: # Loops though every frame number in the sequence
-                for person in all_persons: # Loops though every person
-                    if (person.get_label() == sequence[0]) and (person.get_frame_number() == frame): # If the person label matches the sequence label
-                        if sequence[2] == 1:# else:
-                            person.set_is_talking(2)                    #     person is talking
-                        if sequence[2] == 0:# else:
-                            person.set_is_talking(1)                    #     person not talking
-
 
 class GUI:
     def __init__(self):
@@ -257,17 +180,19 @@ class GUI:
         print(f"Processing video with num people being: {self.number_people}")
 
         process_video(self.selected_file)
-        clustered_data = peform_kmeans_clustering(all_persons, self.number_people)
-        clustered_by_label = split_data_by_cluster(clustered_data)
-        process_clustered_data(clustered_by_label, lip_detection_model)
-        sort_Detected_Sequences(all_Sequences)
-        
-        for sequence in all_Sequences:
-            print(sequence)
-        
-        update_persons(all_Sequences)
 
-        create_processed_video = CreateProcessedVideo(self.selected_file, all_persons, all_Sequences)
+        face_sequence_processor = FaceSequenceProcessor(all_faces, self.number_people, lip_detection_model, self.selected_file)
+        persons = face_sequence_processor.get_persons()
+
+        # print("Number of people: ", len(persons))
+        # for person in persons:
+        #     print(person.get_label())
+        #     print("Number of faces: ", len(person.get_faces()))
+        #     print(person.get_faces()[0].get_frame_number())
+
+
+
+        # create_processed_video = CreateProcessedVideo(self.selected_file, all_faces, all_Sequences) # WILL NEED TO PUT THIS IN PROCESS VIDEO PROBS
         
         # self.output_video_path = self.selected_file + "_modified.mp4"
 
@@ -414,9 +339,9 @@ class SecondGUI:
 
     def update_zoomed_face(self):
         if self.current_frame is not None:
-            for person in all_persons:
-                if person.get_frame_number() == int(self.cap.get(cv2.CAP_PROP_POS_FRAMES)):
-                    x1, y1, x2, y2 = person.get_bounding_box()
+            for face in all_faces:
+                if face.get_frame_number() == int(self.cap.get(cv2.CAP_PROP_POS_FRAMES)):
+                    x1, y1, x2, y2 = face.get_bounding_box()
                     zoomed_face = self.current_frame[y1:y2, x1:x2]
                     zoomed_face_rgb = cv2.cvtColor(zoomed_face, cv2.COLOR_BGR2RGB)
                     right_canvas_width = self.right_canvas.winfo_width()
@@ -449,7 +374,7 @@ def main():
 
     gui = GUI()
 
-    print("Number of Face Vectors: ", len(all_persons))
+    print("Number of Face Vectors: ", len(all_faces))
     print("Total Time taken: ", time.monotonic() - total_time)
     
 if __name__ == "__main__":
