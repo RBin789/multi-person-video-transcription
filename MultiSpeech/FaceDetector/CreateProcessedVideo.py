@@ -1,6 +1,7 @@
 from moviepy.editor import VideoFileClip, VideoClip
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
+from datetime import datetime
 
 class CreateProcessedVideo:
     def __init__(self, video_path, all_persons, all_sequences):
@@ -32,8 +33,11 @@ class CreateProcessedVideo:
             return frame
 
         # Create a new video with the processed frames
+        current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        # Create a new video with the processed frames
         processed_video = video.fl(process_frame)
         processed_video.write_videofile(self.video_path + "_modified.mp4", codec='libx264')
+        processed_video.write_videofile(self.video_path + "_annotated_" + current_time + ".mp4", codec='libx264')
 
     def draw_bounding_box(self, frame, bounding_box, face_coordinates, talking, label):
         # Convert frame to PIL Image

@@ -122,6 +122,8 @@ class Face2Vec:
     def show_keypoints(self):
         """ Shows the first face found with the keypoints drawn on it. """
 
+        cv2.putText(self.img, "Frame: " + str(self.current_frame_num), (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+
         for head in range(len(self.heads)):
             x1, y1, x2, y2 = self.bounding_boxs[head]
             cv2.rectangle(self.img, (x1, y1), (x2, y2), (0, 255, 0), 2)
@@ -163,11 +165,15 @@ class Face2Vec:
         self.euclidianX = x
         self.euclidianY = y
 
-    def all_euclidian(self, keypoints):
+    def all_euclidian(self, keypoints, x_offset):
         """Calculates all the necessary Euclidean distance information and stores it in a tensor """
+        xoffset = np.full(68, x_offset).reshape(-1, 1)
+
         self.euc_xy(keypoints)
         self.euc_center(keypoints)
-        tensor = np.rot90(np.hstack((self.euclidianX, self.euclidianY, self.euclidian)))
+        tensor = np.rot90(np.hstack((xoffset, self.euclidianX, self.euclidianY, self.euclidian)))
+        # print(tensor)
+        # print(tensor.shape)
         return tensor
 
     def distance_1D(self, a, b):
@@ -193,7 +199,7 @@ class Face2Vec:
             
         for j, keypoints in enumerate(self.face_keypoints):
             if len(keypoints) != 0: # This is to check for head but no face
-                tensor = self.all_euclidian(keypoints)
+                tensor = self.all_euclidian(keypoints, self.bounding_boxs[j][0])
                 try:
                     self.face_features.append((tensor, self.current_frame_num, self.lip_seperation[j], self.bounding_boxs[j], self.face_keypoints[j]))
                 except:

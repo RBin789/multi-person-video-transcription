@@ -75,6 +75,7 @@ def audio_to_text(audio_path):
                 transcriptions.append((word_info['start'], word_info['end'], word_info['word']))
     return transcriptions
 
+
 def process_video(video_path):
 
     # Open the video file
@@ -92,16 +93,23 @@ def process_video(video_path):
     success, frame = video.read() # Read the first frame
 
     while success:
+        print("-----------------------------------------------------------------------------------------------------------")
+        print("Frame Number: " + str(current_frame_num))
         face2vec = Face2Vec(frame, current_frame_num, face_detector, landmark_predictor, yolo_model)
         face_features = face2vec.get_face_features()
 
-        for face_features in face_features:
+        for faceid, face_features in enumerate(face_features):
             person = Person(face_features[0], face_features[1], face_features[2], face_features[3], face_features[4]) # Create a new person object (face vector, frame number, lip_seperation, bounding_box, face_coordinates)
             all_persons.append(person)
+            print("face: " + str(faceid))
+            print("lipSep: " + str(person.get_lip_seperation()))
+            print("boundBox: " + str(person.get_bounding_box()))
+            print()
         
         success, frame = video.read()
+        # print("Frame: " + str(current_frame_num) + " Processed")
         current_frame_num += 1
-        print("Frame Processed")
+
     # Release the video file
     video.release()
     cv2.destroyAllWindows()
@@ -112,6 +120,8 @@ def peform_kmeans_clustering(all_persons, num_people):
 
     # Convert the list of vectors to a NumPy array
     vector_array = np.array(vectors)
+    print(vector_array)
+    print(vector_array.shape)
 
     # Create the KMeans model
     kmeans = KMeans(n_clusters=num_people)
@@ -129,6 +139,12 @@ def peform_kmeans_clustering(all_persons, num_people):
     for item, label in zip(all_persons, cluster_labels):
         clustered_data.append([item.get_face_vector(), item.get_frame_number(), item.get_lip_seperation(), label])
         item.set_label(label)
+
+    # Plotting the clusters
+    plt.scatter(vector_array[:, 0], vector_array[:, 1], c=cluster_labels, cmap='viridis')
+    centers = kmeans.cluster_centers_
+    plt.scatter(centers[:, 0], centers[:, 1], c='black', s=200, alpha=0.5)
+    plt.show() 
 
     return clustered_data
 
@@ -245,17 +261,21 @@ class GUI:
         clustered_by_label = split_data_by_cluster(clustered_data)
         process_clustered_data(clustered_by_label, lip_detection_model)
         sort_Detected_Sequences(all_Sequences)
-        print("All Sequences sorted: ", all_Sequences)
+        
+        for sequence in all_Sequences:
+            print(sequence)
+        
         update_persons(all_Sequences)
 
         create_processed_video = CreateProcessedVideo(self.selected_file, all_persons, all_Sequences)
-        self.output_video_path = self.selected_file + "_modified.mp4"
+        
+        # self.output_video_path = self.selected_file + "_modified.mp4"
 
         # Audio to text conversion
-        self.audio_path = self.selected_file.replace(".mp4", "_16k.wav")
-        video_clip = VideoFileClip(self.selected_file)
-        video_clip.audio.write_audiofile(self.audio_path.replace("_16k.wav", ".wav"))
-        self.transcriptions = audio_to_text(self.audio_path.replace("_16k.wav", ".wav"))
+        # self.audio_path = self.selected_file.replace(".mp4", "_16k.wav")
+        # video_clip = VideoFileClip(self.selected_file)
+        # video_clip.audio.write_audiofile(self.audio_path.replace("_16k.wav", ".wav"))
+        # self.transcriptions = audio_to_text(self.audio_path.replace("_16k.wav", ".wav"))
 
         messagebox.showinfo("Finished", "The video transcription has been completed.", parent=self.MyWindow)
 
