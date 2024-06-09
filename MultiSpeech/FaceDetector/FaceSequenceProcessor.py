@@ -23,6 +23,8 @@ class FaceSequenceProcessor:
         self.run_functions(all_faces, num_people)
 
     def run_functions(self, all_faces, num_people):
+        self.normalize_lip_seperation(all_faces)
+        
         clustered_data = self.peform_kmeans_clustering(all_faces, num_people)
         clustered_by_label = self.split_data_by_cluster(clustered_data)
         self.process_clustered_data(clustered_by_label, self.lip_detection_model)
@@ -33,6 +35,23 @@ class FaceSequenceProcessor:
         self.print_sequences()
         self.create_annotated_video(all_faces, self.all_sequences)
     
+    def normalize_lip_seperation(self, all_faces):
+    
+        max_lip_sep = 0
+        frame_occurence = 0
+
+        for face_num, face in enumerate(all_faces):
+            if face.get_lip_seperation() > max_lip_sep:
+                max_lip_sep = face.get_lip_seperation()
+                frame_occurence = face.get_frame_number()
+    
+        print("Max lip sep: " + str(max_lip_sep))
+        print("Frame occurence: " + str(frame_occurence))
+
+        for face_num, face in enumerate(all_faces):
+            face.set_lip_seperation(face.get_lip_seperation() / max_lip_sep)
+                
+
     def peform_kmeans_clustering(self, all_faces, num_people):
         # Extract vectors from the list
         vectors = [face_vector.get_face_vector() for face_vector in all_faces]
@@ -58,10 +77,10 @@ class FaceSequenceProcessor:
             item.set_label(label)
 
         # Plotting the clusters
-        plt.scatter(vector_array[:, 0], vector_array[:, 1], c=cluster_labels, cmap='viridis')
-        centers = kmeans.cluster_centers_
-        plt.scatter(centers[:, 0], centers[:, 1], c='black', s=200, alpha=0.5)
-        plt.show() 
+        # plt.scatter(vector_array[:, 0], vector_array[:, 1], c=cluster_labels, cmap='viridis')
+        # centers = kmeans.cluster_centers_
+        # plt.scatter(centers[:, 0], centers[:, 1], c='black', s=200, alpha=0.5)
+        # plt.show() 
 
         return clustered_data
     
@@ -109,12 +128,12 @@ class FaceSequenceProcessor:
                     person.add_face(face)
             self.persons.append(person)
 
-    def create_annotated_video(self, all_faces, all_sequences):
-        create_processed_video = CreateProcessedVideo(self.selected_file, all_faces, all_sequences)
-
     def print_sequences(self):
         for sequence in self.all_sequences:
             print(sequence)
+
+    def create_annotated_video(self, all_faces, all_sequences):
+        create_processed_video = CreateProcessedVideo(self.selected_file, all_faces, all_sequences)
 
     def get_persons(self):
         return self.persons

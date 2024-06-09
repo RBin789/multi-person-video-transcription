@@ -15,6 +15,7 @@ from FaceDetector.Face2Vec import *
 from FaceDetector.Person import *
 from FaceDetector.FaceSequenceProcessor import *
 from FaceDetector.Face import *
+from FaceDetector.CreateTranscript import *
 from ultralytics import YOLO
 from PIL import Image, ImageTk, ImageOps
 from moviepy.editor import VideoFileClip
@@ -42,7 +43,7 @@ def convert_audio(audio_path):
 
 # Function to convert audio to text using Vosk with timestamps
 def audio_to_text(audio_path):
-    model_path = "MultiSpeech/FaceDetector/models/vosk-model-small-en-us-0.15"  # Update with the path to your Vosk model directory
+    model_path = "MultiSpeech/FaceDetector/models/vosk-model-small-en-us-0.15"
     if not os.path.exists(model_path):
         print(f"Model not found at {model_path}, please download and unzip the model from https://alphacephei.com/vosk/models")
         return []
@@ -105,7 +106,6 @@ def process_video(video_path):
             print()
         
         success, frame = video.read()
-        # print("Frame: " + str(current_frame_num) + " Processed")
         current_frame_num += 1
 
     # Release the video file
@@ -184,15 +184,7 @@ class GUI:
         face_sequence_processor = FaceSequenceProcessor(all_faces, self.number_people, lip_detection_model, self.selected_file)
         persons = face_sequence_processor.get_persons()
 
-        # print("Number of people: ", len(persons))
-        # for person in persons:
-        #     print(person.get_label())
-        #     print("Number of faces: ", len(person.get_faces()))
-        #     print(person.get_faces()[0].get_frame_number())
-
-
-
-        # create_processed_video = CreateProcessedVideo(self.selected_file, all_faces, all_Sequences) # WILL NEED TO PUT THIS IN PROCESS VIDEO PROBS
+        create_transcript = CreateTranscript(self.selected_file, persons)
         
         # self.output_video_path = self.selected_file + "_modified.mp4"
 

@@ -11,7 +11,6 @@ class Lip_Detection:  # This class takes in 25 values of lip separation and pred
         self.X_data = None
         self.sequence_and_prediction = None
 
-
         self.prepare_sequences()
         self.detect_lip_movement()
         self.get_sequence_and_prediction()
@@ -23,9 +22,13 @@ class Lip_Detection:  # This class takes in 25 values of lip separation and pred
             f.append(item[2])  # Append the lip separation value to the list
         if f:  # If the list is not empty
             f = np.array(f).reshape(-1, 1)  # Reshape the array to 2D
-            self.scalar = MinMaxScaler() 
+            self.scalar = MinMaxScaler()
             arr = self.scalar.fit_transform(f)
-            self.X_data = np.array([arr]) 
+            # arr = f
+            self.X_data = np.array([arr])
+            if self.sequence[0][1] > 0 and self.sequence[0][1]  < 25:
+                # print("NormaL   Start Frame: " + str(self.sequence[0][1]) + ", lip sep data: " + str(f))
+                print("NormaL   Start Frame: " + str(self.sequence[0][1]) + ", lip sep data: " + str(arr))
         else:
             raise ValueError("The sequence attribute doesn't contain the expected data.")
         
@@ -48,3 +51,6 @@ class Lip_Detection:  # This class takes in 25 values of lip separation and pred
     
     def get_sequence_and_prediction(self):
         return self.sequence_and_prediction
+    
+    def printWithLipSep(self):
+        pass
