@@ -25,6 +25,9 @@ class Face2Vec:
         self.face_keypoints = []
         self.face_features = []
         self.lip_seperation = []
+        self.enforced_face_frame_height = 640 # This is the enforced height of a face frame.
+        self.min_lip_threshold = 0.005 # This is the minimum lip threshold for the lip seperation
+        
 
         self.detect_faces()
         self.detect_keypoints()
@@ -48,9 +51,6 @@ class Face2Vec:
             xyxys = boxes.xyxy
             for xyxy in xyxys:
                 x1, y1, x2, y2 = xyxy
-                # cv2.rectangle(self.img, (int(x1), int(y1)), (int(x2), int(y2)), (0, 0, 255), 2)
-                # cv2.imshow('image', np.array(self.img))
-                # cv2.waitKey(0)
 
                 faces.append((int(x1), int(y1), int(x2), int(y2)))
         
@@ -115,16 +115,35 @@ class Face2Vec:
                     x = landmarks_for_face.part(j).x
                     y = landmarks_for_face.part(j).y
                     landmarks.append((x, y))
-                self.lip_seperation.append(self.calculate_Lip_Seperation(landmarks))
+
+                min_point = min(landmarks, key=lambda pair: pair[1])
+                max_point = max(landmarks, key=lambda pair: pair[1])
+                # bounding_box_height_scaling = self.enforced_face_frame_height/(self.bounding_boxs[i][3] - self.bounding_boxs[i][1]) # y2 - y1 # This is to ensure that the lip seperation is the same for all face frame sizes
+                # bounding_box_height_scaling = self.enforced_face_frame_height/(max_point[1] - min_point[1]) # This is to ensure that the lip seperation is the same for all face frame sizes
+                
+                lip_sepration = self.calculate_Lip_Seperation(landmarks)
+                height_of_face = max_point[1] - min_point[1]
+                
+                if (lip_sepration / height_of_face) < self.min_lip_threshold:
+                    lip_sepration = 0
+                
+                print("Face Height: ", max_point[1] - min_point[1])
+                print ("Orig Lip Seperation: ", self.calculate_Lip_Seperation(landmarks))
+                print ("New Lip Seperation: ", lip_sepration)
+                
+                # lip_sepration = self.calculate_Lip_Seperation(landmarks)
+                self.lip_seperation.append(lip_sepration)
                 self.face_keypoints.append(landmarks)
                 break  # This is to ensure that the landmark predictor only gets the first face even if it finds multiple (just take the first)    
 
     def show_keypoints(self):
         """ Shows the first face found with the keypoints drawn on it. """
 
+        cv2.putText(self.img, "Frame: " + str(self.current_frame_num), (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+
         for head in range(len(self.heads)):
             x1, y1, x2, y2 = self.bounding_boxs[head]
-            cv2.rectangle(self.img, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            cv2.rectangle(self.img, (x1, y1), (x2, y2), (255, 0, 0), 2)
         
             if self.face_keypoints[head] != []:
                 for point in range(len(self.face_keypoints[head])):
@@ -163,11 +182,15 @@ class Face2Vec:
         self.euclidianX = x
         self.euclidianY = y
 
-    def all_euclidian(self, keypoints):
+    def all_euclidian(self, keypoints, x_offset):
         """Calculates all the necessary Euclidean distance information and stores it in a tensor """
+        xoffset = np.full(68, x_offset).reshape(-1, 1)
+
         self.euc_xy(keypoints)
         self.euc_center(keypoints)
-        tensor = np.rot90(np.hstack((self.euclidianX, self.euclidianY, self.euclidian)))
+        tensor = np.rot90(np.hstack((xoffset, self.euclidianX, self.euclidianY, self.euclidian)))
+        # print(tensor)
+        # print(tensor.shape)
         return tensor
 
     def distance_1D(self, a, b):
@@ -193,7 +216,8 @@ class Face2Vec:
             
         for j, keypoints in enumerate(self.face_keypoints):
             if len(keypoints) != 0: # This is to check for head but no face
-                tensor = self.all_euclidian(keypoints)
+                tensor = self.all_euclidian(keypoints, self.bounding_boxs[j][0])
+                tensor = tensor.flatten()
                 try:
                     self.face_features.append((tensor, self.current_frame_num, self.lip_seperation[j], self.bounding_boxs[j], self.face_keypoints[j]))
                 except:

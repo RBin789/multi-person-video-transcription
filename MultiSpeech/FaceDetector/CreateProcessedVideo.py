@@ -1,11 +1,12 @@
 from moviepy.editor import VideoFileClip, VideoClip
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
+from datetime import datetime
 
 class CreateProcessedVideo:
-    def __init__(self, video_path, all_persons, all_sequences):
+    def __init__(self, video_path, all_faces, all_sequences):
         self.video_path = video_path
-        self.all_persons = all_persons
+        self.all_faces = all_faces
         self.all_sequences = all_sequences
         self.current_frame_num = 0
         self.video_width = 0
@@ -25,15 +26,18 @@ class CreateProcessedVideo:
             frame = get_frame(t)
             self.current_frame_num = int(t * video.fps) + 1
 
-            for person in self.all_persons:                
-                if person.get_frame_number() == self.current_frame_num:
-                    frame = self.draw_bounding_box(frame, person.get_bounding_box(), person.get_face_coordinates(), person.is_talking(), person.get_label())
-                    
+            for face in self.all_faces:                
+                if face.get_frame_number() == self.current_frame_num:
+                    frame = self.draw_bounding_box(frame, face.get_bounding_box(), face.get_face_coordinates(), face.is_talking(), face.get_label())
+
             return frame
 
         # Create a new video with the processed frames
+        current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        # Create a new video with the processed frames
         processed_video = video.fl(process_frame)
         processed_video.write_videofile(self.video_path + "_modified.mp4", codec='libx264')
+        processed_video.write_videofile(self.video_path + "_annotated_" + current_time + ".mp4", codec='libx264')
 
     def draw_bounding_box(self, frame, bounding_box, face_coordinates, talking, label):
         # Convert frame to PIL Image
