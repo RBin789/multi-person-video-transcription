@@ -7,10 +7,9 @@ import dlib
 import numpy as np
 from sklearn.preprocessing import MaxAbsScaler
 
-
 """
 This code is used to detect faces in an image and extract the facial keypoints and turn them into vectors
-This code is heavily based on the code from the following link: https://github.com/N2ITN/Face2Vec/tree/master specifically the file identify.py file
+This code is based on the code from the following link: https://github.com/N2ITN/Face2Vec/tree/master specifically the file identify.py file
 """
 
 class Face2Vec:
@@ -20,34 +19,29 @@ class Face2Vec:
         self.face_detector = face_detector
         self.landmark_predictor = landmark_predictor
         self.yolo_model = yolo_model
+        
         self.bounding_boxs = []
         self.heads = []
         self.face_keypoints = []
         self.face_features = []
         self.lip_seperation = []
-        self.enforced_face_frame_height = 640 # This is the enforced height of a face frame.
+        self.enforced_face_frame_height = 480 # This is the enforced height of a face frame.
         self.min_lip_threshold = 0.005 # This is the minimum lip threshold for the lip seperation
         
-
         self.detect_faces()
         self.detect_keypoints()
         self.convert_to_vectors()
-        
         self.show_keypoints() # Display the keypoints on the faces.  Comment out if not needed
-        # self.print_vectors() # Print the number of vectors.  Comment out if not needed
     
-
     def detect_faces(self):
-        # Detects faces in the image
-        # Might be changed to a more accurate model just simple for now
+        """Detects faces in the image and crops the image to the face bounding box."""
+        
         faces = []
-
         results = self.yolo_model(self.img)
         
-        # Display the results
+        # Extract the bounding boxes from the results
         for result in results:
             boxes = result.boxes.cpu().numpy()
-            # x1, y1, x2, y2 = box[0]
             xyxys = boxes.xyxy
             for xyxy in xyxys:
                 x1, y1, x2, y2 = xyxy
@@ -58,10 +52,13 @@ class Face2Vec:
             self.crop_image(x1, y1, x2, y2)
 
     def crop_image(self, x1, y1, x2, y2):
-        # Convert face coordinates to rectangle corner points
+        """Crops the image to the face bounding box."""
+        
+        # Grow the bounding box by 1/8 of the width and height
         growx = (x2 - x1)/8
         growy = (y2 - y1)/8
 
+        # Grow the bounding box
         x1 = int(x1 - growx)
         x2 = int(x2 + growx)
         y1 = int(y1 - growy)
@@ -73,13 +70,12 @@ class Face2Vec:
         y1 = max(0, y1)
         y2 = max(0, y2)
 
-
         self.heads.append(self.img[y1:y2, x1:x2])
         self.bounding_boxs.append((x1, y1, x2, y2))
-    
 
     def calculate_Lip_Seperation(self, keypoints):
         """Calculates the distance between the top and bottom lip"""
+
         point61 = keypoints[61] # To understand the points see the following link: https://github.com/sachinsdate/lip-movement-net/tree/master
         point67 = keypoints[67]
         difference1 = abs(point61[1] - point67[1])
@@ -93,8 +89,8 @@ class Face2Vec:
         difference3 = abs(point63[1] - point65[1])
 
         avg_distance = (difference1 + difference2 + difference3) / 3
+        
         return avg_distance
-
 
     def detect_keypoints(self):
         """For self.face_keypoints data is stored in the form [(68 points), (68 points), (68 points)] every entry is a face"""  
@@ -103,11 +99,12 @@ class Face2Vec:
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             faces = self.face_detector(gray, 1)
             
-          
+            # If no faces are found, append an empty list to the face_keypoints and lip_seperation lists
             if len(faces) == 0:
                 self.face_keypoints.append([])
                 self.lip_seperation.append([])
         
+            # If faces are found, extract the facial keypoints and lip seperation
             for face in faces:
                 landmarks_for_face = self.landmark_predictor(gray, face)
                 landmarks = []
@@ -116,63 +113,62 @@ class Face2Vec:
                     y = landmarks_for_face.part(j).y
                     landmarks.append((x, y))
 
-                min_point = min(landmarks, key=lambda pair: pair[1])
-                max_point = max(landmarks, key=lambda pair: pair[1])
-                # bounding_box_height_scaling = self.enforced_face_frame_height/(self.bounding_boxs[i][3] - self.bounding_boxs[i][1]) # y2 - y1 # This is to ensure that the lip seperation is the same for all face frame sizes
-                # bounding_box_height_scaling = self.enforced_face_frame_height/(max_point[1] - min_point[1]) # This is to ensure that the lip seperation is the same for all face frame sizes
-                
-                lip_sepration = self.calculate_Lip_Seperation(landmarks)
+                min_point = min(landmarks, key=lambda pair: pair[1]) # This is to get the top most point of the face
+                max_point = max(landmarks, key=lambda pair: pair[1]) # This is to get the bottom most point of the face
                 height_of_face = max_point[1] - min_point[1]
+                face_height_scaling = self.enforced_face_frame_height/height_of_face  # This is to ensure that the lip seperation is the same for all face frame sizes
                 
+                lip_sepration = self.calculate_Lip_Seperation(landmarks) * face_height_scaling # Scale the lip seperation based on the face height
+                
+                # If the lip seperation is less than the threshold, set it to 0
                 if (lip_sepration / height_of_face) < self.min_lip_threshold:
                     lip_sepration = 0
                 
-                print("Face Height: ", max_point[1] - min_point[1])
+                print("Face Height: ", height_of_face)
                 print ("Orig Lip Seperation: ", self.calculate_Lip_Seperation(landmarks))
                 print ("New Lip Seperation: ", lip_sepration)
                 
-                # lip_sepration = self.calculate_Lip_Seperation(landmarks)
                 self.lip_seperation.append(lip_sepration)
                 self.face_keypoints.append(landmarks)
                 break  # This is to ensure that the landmark predictor only gets the first face even if it finds multiple (just take the first)    
 
     def show_keypoints(self):
-        """ Shows the first face found with the keypoints drawn on it. """
+        """Displays the frame with the facial keypoints plotted."""
 
-        cv2.putText(self.img, "Frame: " + str(self.current_frame_num), (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+        cv2.putText(self.img, "Frame: " + str(self.current_frame_num), (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA) # Display the frame number
 
+        # Loop through each face and plot the bounding box and facial keypoints
         for head in range(len(self.heads)):
             x1, y1, x2, y2 = self.bounding_boxs[head]
             cv2.rectangle(self.img, (x1, y1), (x2, y2), (255, 0, 0), 2)
         
             if self.face_keypoints[head] != []:
                 for point in range(len(self.face_keypoints[head])):
-                    x, y = self.face_keypoints[head][point]
-                    color = (0, 0, 255) if point in [61, 62, 63, 65, 66, 67] else (0, 255, 255)
-                    cv2.circle(self.img, (x+x1, y+y1), 1, color, 2)
+                    x, y = self.face_keypoints[head][point] # Get the x, y coords of the point 
+                    color = (0, 0, 255) if point in [61, 62, 63, 65, 66, 67] else (0, 255, 255) # Set color the lips to red and the rest to yellow
+                    cv2.circle(self.img, (x+x1, y+y1), 1, color, 2) # Plot the point on the image
 
-            cv2.imshow("Image with Landmarks", self.img)
+            cv2.imshow("Image with Landmarks", self.img) 
         cv2.waitKey(1)
 
-# -----------------------------------------------------------------------------------------------
-
     def euc_center(self, keypoints):
-        """ Calculates the Euclidean distance between the center point of the face (defined in geom) and each keypoint """
-        centerPoint = keypoints[30]
-
-        euclidian = [self.distance_2D(centerPoint, point) for point in keypoints]
+        """Calculates the Euclidean distance between the center point of the face and each keypoint."""
+        
+        centerPoint = keypoints[30] # The center point of the face
+        euclidian = [self.distance_2D(centerPoint, point) for point in keypoints] # Calculate the Euclidean distance between the center point and each keypoint
         euclidian = np.array(euclidian).reshape(-1, 1)
-        norm = MaxAbsScaler().fit_transform(euclidian)
-        self.euclidian = norm # Definition of self.euclidian
+        norm = MaxAbsScaler().fit_transform(euclidian) 
+        self.euclidian = norm
 
     def euc_xy(self, keypoints):
         """ This function calculates the separate X and Y components of the Euclidean distance between the center point and each keypoint """
+        
         euclidian1D = []
-        centerPoint = keypoints[30]
+        centerPoint = keypoints[30] # The center point of the face
 
-        [euclidian1D.append(self.distance_1D(centerPoint, point)) for point in keypoints]
+        [euclidian1D.append(self.distance_1D(centerPoint, point)) for point in keypoints] # Calculate the X and Y distances between the center point and each keypoint
 
-        x, y = [x for x in zip(*euclidian1D)]
+        x, y = [x for x in zip(*euclidian1D)] # Unzip the list of tuples into two separate lists
 
         x = np.array(x).reshape(-1, 1)
         y = np.array(y).reshape(-1, 1)
@@ -182,41 +178,86 @@ class Face2Vec:
         self.euclidianX = x
         self.euclidianY = y
 
-    def all_euclidian(self, keypoints, x_offset):
+    def calculate_angles(self, keypoints):
+        """Calculates the angle between the center point and each keypoint."""
+        
+        centerPoint = keypoints[30] # The center point of the face
+        angles = [self.calculate_angle(centerPoint, point) for point in keypoints]
+        angles = np.array(angles).reshape(-1, 1)
+        norm = MaxAbsScaler().fit_transform(angles)
+        self.angle_values = norm
+
+    def normalized_coordinates(self, keypoints, bounding_box):
+        """Calculates the normalized coordinates of each keypoint relative to the bounding box."""
+        
+        x_min, y_min, x_max, y_max = bounding_box 
+        width = x_max - x_min
+        height = y_max - y_min
+        norm_coords = [((x - x_min) / width, (y - y_min) / height) for (x, y) in keypoints]
+        norm_coords = np.array(norm_coords).reshape(-1, 2)
+        self.norm_coords = norm_coords
+
+    def aspect_ratio(self, keypoints):
+        """Calculates the aspect ratio of the bounding box enclosing the face keypoints."""
+        
+        x_coords = [point[0] for point in keypoints]
+        y_coords = [point[1] for point in keypoints]
+        width = max(x_coords) - min(x_coords)
+        height = max(y_coords) - min(y_coords)
+        self.aspect_ratio_values = width / height
+
+    def all_euclidian(self, keypoints, bounding_box):
         """Calculates all the necessary Euclidean distance information and stores it in a tensor """
-        xoffset = np.full(68, x_offset).reshape(-1, 1)
+        
+        x_offset = np.full(68, bounding_box[0]).reshape(-1, 1)
 
         self.euc_xy(keypoints)
         self.euc_center(keypoints)
-        tensor = np.rot90(np.hstack((xoffset, self.euclidianX, self.euclidianY, self.euclidian)))
-        # print(tensor)
-        # print(tensor.shape)
+        self.calculate_angles(keypoints)
+        self.normalized_coordinates(keypoints, bounding_box)
+        self.aspect_ratio(keypoints)
+        aspect_ratios = np.full(68, self.aspect_ratio_values).reshape(-1, 1)
+
+        # tensor = np.rot90(np.hstack((x_offset, self.euclidianX, self.euclidianY, self.euclidian, self.angle_values, self.norm_coords, aspect_ratios)))
+        tensor = np.rot90(np.hstack((self.euclidianX, self.euclidianY, self.euclidian, self.angle_values, self.norm_coords, aspect_ratios)))
         return tensor
+
+    def calculate_angle(self, center, point):
+        """Calculates the angle between the horizontal axis and the line connecting the center point and a keypoint."""
+        
+        x1, y1 = center
+        x2, y2 = point
+        angle = np.arctan2(y2 - y1, x2 - x1)
+        
+        return angle
 
     def distance_1D(self, a, b):
         """ This function calculates the X and Y distances between two points (a and b) """
+        
         x1, y1 = a
         x2, y2 = b
         x = x1 - x2
         y = y1 - y2
+        
         return x, y
     
     def distance_2D(self, a, b):
         """ This function calculates the Euclidean distance between two points (a and b) """
+        
         x1, y1 = a
         x2, y2 = b
         a = np.array((x1, y1))
         b = np.array((x2, y2))
         dist = np.linalg.norm(a - b)
+        
         return dist
     
     def convert_to_vectors(self):
-        # for i in range(len(self.face_keypoints)):
-            # print(self.face_keypoints[i])
-            
+        """Convert each face to a vector and create a list object that holds all information about the face"""
+
         for j, keypoints in enumerate(self.face_keypoints):
             if len(keypoints) != 0: # This is to check for head but no face
-                tensor = self.all_euclidian(keypoints, self.bounding_boxs[j][0])
+                tensor = self.all_euclidian(keypoints, self.bounding_boxs[j])
                 tensor = tensor.flatten()
                 try:
                     self.face_features.append((tensor, self.current_frame_num, self.lip_seperation[j], self.bounding_boxs[j], self.face_keypoints[j]))
@@ -224,9 +265,6 @@ class Face2Vec:
                     print("Error in Face2Vec.py! Check the convert_to_vectors function.")
 
     def get_face_features(self):
-        return self.face_features    
+        """Get the face features."""
 
-    def print_vectors(self):
-        print("Faces found: " + str(len(self.face_keypoints)))
-        print("Length of vector " + str(len(self.face_features)))
-        # print(self.face_features)
+        return self.face_features

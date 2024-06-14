@@ -5,17 +5,14 @@ class Sequence_Generation:
         self.person_label = person_label
         self.person_sequences = []  # Final Format of person_sequences: [[[[vectors], frame_num, lip_sep], [[vectors], frame_num, lip_sep], ...], [[vectors], frame_num, lip_sep], [[vectors], frame_num, lip_sep], ...]] the are frames in order 
 
-        if self.person_label == 0:
-            self.person_label = "A"
-        else:
-            self.person_label = "B"
-
         self.generate_sequences()
         # self.print_sequences()
         
-
     def generate_sequences(self):
+        """Generate sequences of 25 frames each."""
+
         current_sublist = []
+        
         for i, item in enumerate(self.person_vectors):
 
             if (len(current_sublist) == 0) or ((item[1]) == (self.person_vectors[i-1][1]+1)):           # Add current frame to curent frame list, if first item or current frame is one more than previous i.e. continuous segment
@@ -35,9 +32,11 @@ class Sequence_Generation:
             self.person_sequences.append(current_sublist)                                               # Appends the processed sublist to main list
 
     def print_sequences(self):
+        """Print the sequences."""
+
         for i, sequence in enumerate(self.person_sequences):
             for j, item in enumerate(sequence):
-                print(self.person_label + str(item[1]) + ", ", end="")
+                print(str(item[1]) + ", ", end="")
             print(" length=" + str(len(sequence)), end="")
             print("\n")
 
