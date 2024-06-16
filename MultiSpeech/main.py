@@ -111,6 +111,7 @@ def process_video(video_path):
     # Release the video file
     video.release()
     cv2.destroyAllWindows()
+    return current_frame_num
 
 def run_gui():
     app = GUI()
@@ -179,9 +180,9 @@ class GUI:
         self.number_people = int(self.number_entry.get())
         print(f"Processing video with num people being: {self.number_people}")
 
-        process_video(self.selected_file)
+        num_of_frames = process_video(self.selected_file)
 
-        face_sequence_processor = FaceSequenceProcessor(all_faces, self.number_people, lip_detection_model, self.selected_file)
+        face_sequence_processor = FaceSequenceProcessor(all_faces, self.number_people, lip_detection_model, self.selected_file, num_of_frames)
         persons = face_sequence_processor.get_persons()
 
         create_transcript = CreateTranscript(self.selected_file, persons)
