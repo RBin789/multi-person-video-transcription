@@ -20,7 +20,7 @@ class FaceSequenceProcessor:
 
         self.persons = []
         self.all_sequences = []
-        self.all_lip_seperations = []
+        self.all_lip_separations = []
 
         self.run_functions(all_faces)
 
@@ -29,7 +29,7 @@ class FaceSequenceProcessor:
         
         clustered_data = self.peform_kmeans_clustering(all_faces, self.num_people)
         clustered_by_label = self.split_data_by_cluster(clustered_data)
-        self.process_clustered_data(clustered_by_label, self.lip_detection_model, self.all_lip_seperations)
+        self.process_clustered_data(clustered_by_label, self.lip_detection_model, self.all_lip_separations)
         self.sort_Detected_Sequences()
 
         self.update_faces()
@@ -38,15 +38,15 @@ class FaceSequenceProcessor:
         self.create_annotated_video(all_faces, self.all_sequences)
 
     def find_max_lip_sep_per_frame(self, all_faces, num_of_frames):
-        """Create a List of the maximum lip seperation for each frame in the video."""
+        """Create a List of the maximum lip separation for each frame in the video."""
 
         for frame in range(1, num_of_frames + 1): 
             max_lip_sep = 0
             for face_num, face in enumerate(all_faces):
                 if face.get_frame_number() == frame:
-                    if face.get_lip_seperation() > max_lip_sep:
-                        max_lip_sep = face.get_lip_seperation()
-            self.all_lip_seperations.append(max_lip_sep)
+                    if face.get_lip_separation() > max_lip_sep:
+                        max_lip_sep = face.get_lip_separation()
+            self.all_lip_separations.append(max_lip_sep)
 
     def peform_kmeans_clustering(self, all_faces, num_people):
         """Perform KMeans clustering on the face vectors & assign labels to the faces."""
@@ -92,7 +92,7 @@ class FaceSequenceProcessor:
 
         # Create a list of the clustered data
         for item in all_faces:
-            clustered_data.append([item.get_face_vector(), item.get_frame_number(), item.get_lip_seperation(), item.get_label()])               
+            clustered_data.append([item.get_face_vector(), item.get_frame_number(), item.get_lip_separation(), item.get_label()])               
         
         # Plotting the clusters
         # plt.scatter(vector_array[:, 0], vector_array[:, 1], c=cluster_labels, cmap='viridis')
@@ -115,22 +115,22 @@ class FaceSequenceProcessor:
         
         return clustered_by_label # A dictionary where keys are cluster labels and values are lists of data points belonging to that cluster.
 
-    def process_clustered_data(self, clustered_by_label, lip_detection_model, all_lip_seperations):
+    def process_clustered_data(self, clustered_by_label, lip_detection_model, all_lip_separations):
         """Process the clustered data by running the lip detection on each cluster."""
         
         for cluster_label, cluster_data in clustered_by_label.items():
             sequence_generation = Sequence_Generation(cluster_label, cluster_data) # Generate all of one persons sequences
             person_sequences = sequence_generation.get_person_sequences() # Get all of one persons sequences
             
-            self.run_lip_detection(person_sequences, cluster_label, lip_detection_model, all_lip_seperations) 
+            self.run_lip_detection(person_sequences, cluster_label, lip_detection_model, all_lip_separations) 
 
-    def run_lip_detection(self, person_sequences, cluster_label, lip_detection_model, all_lip_seperations):
+    def run_lip_detection(self, person_sequences, cluster_label, lip_detection_model, all_lip_separations):
         """Run the lip detection on each sequence of a person."""
 
         for i, sequence in enumerate(person_sequences):
             if (len(sequence) == 0):
                 continue
-            lip_detection = Lip_Detection(sequence, cluster_label, lip_detection_model, all_lip_seperations) 
+            lip_detection = Lip_Detection(sequence, cluster_label, lip_detection_model, all_lip_separations) 
             self.all_sequences.append(lip_detection.get_sequence_and_prediction()) # Append the sequence and prediction to the list of all sequences
 
     def sort_Detected_Sequences(self):

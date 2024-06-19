@@ -27,6 +27,7 @@ from vosk import Model, KaldiRecognizer
 from pydub import AudioSegment
 import wave
 import json
+from collections import Counter
 
 all_faces = []
 selected_file = None  # Initialize variable to store video path
@@ -98,10 +99,10 @@ def process_video(video_path):
         face_features = face2vec.get_face_features()
 
         for faceid, face_features in enumerate(face_features):
-            face = Face(face_features[0], face_features[1], face_features[2], face_features[3], face_features[4]) # Create a new person object (face vector, frame number, lip_seperation, bounding_box, face_coordinates)
+            face = Face(face_features[0], face_features[1], face_features[2], face_features[3], face_features[4]) # Create a new person object (face vector, frame number, lip_separation, bounding_box, face_coordinates)
             all_faces.append(face)
             print("face: " + str(faceid))
-            print("lipSep: " + str(face.get_lip_seperation()))
+            print("lipSep: " + str(face.get_lip_separation()))
             print("boundBox: " + str(face.get_bounding_box()))
             print()
         
@@ -206,7 +207,16 @@ class GUI:
         self.open_assign_names_gui()
 
     def BtnViewTranscript_Clicked(self):
-        self.open_assign_names_gui()
+            transcript_window = tk.Toplevel(self.MyWindow)
+            transcript_window.title("Transcript")
+            transcript_window.geometry("600x400")
+
+            text_box = Text(transcript_window, wrap=WORD)
+            text_box.pack(expand=True, fill=BOTH)
+
+            if self.transcriptions:
+                for transcription in self.transcriptions:
+                    text_box.insert(END, f"{transcription}\n")
 
     def open_assign_names_gui(self):
         self.MyWindow.destroy()
@@ -256,29 +266,34 @@ class AssignNamesGUI:
         self.window.mainloop()
 
     def display_faces(self):
-        # Open video file
         video_capture = cv2.VideoCapture(self.video_path)
+        unique_labels = set()
+        most_frequent_faces = {}
+
+        # Count the frequency of each label
+        label_counter = Counter(face.get_label() for face in self.all_faces)
         
-        displayed_faces = set()
+        # Find the most frequent face for each label
+        for label in label_counter.keys():
+            faces_with_label = [face for face in self.all_faces if face.get_label() == label]
+            frame_numbers = [face.get_frame_number() for face in faces_with_label]
+            most_common_frame_number = Counter(frame_numbers).most_common(1)[0][0]
+            most_frequent_face = next(face for face in faces_with_label if face.get_frame_number() == most_common_frame_number)
+            most_frequent_faces[label] = most_frequent_face
 
-        for face in self.all_faces:
-            if len(displayed_faces) >= 3:
+        for i, label in enumerate(most_frequent_faces.keys()):
+            if i >= min(3, self.number_people):
                 break
-
+            
+            face = most_frequent_faces[label]
             frame_number = face.get_frame_number()
             bounding_box = face.get_bounding_box()
 
-            # Set the video to the frame where the face was detected
             video_capture.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
             ret, frame = video_capture.read()
 
             if not ret:
                 continue
-
-            if face.get_label() in displayed_faces:
-                continue
-
-            displayed_faces.add(face.get_label())
 
             x1, y1, x2, y2 = bounding_box
             zoomed_face = frame[y1:y2, x1:x2]
@@ -290,7 +305,7 @@ class AssignNamesGUI:
             resized_zoomed_face = cv2.resize(zoomed_face_rgb, (new_face_width, new_face_height))
             zoomed_img = Image.fromarray(resized_zoomed_face)
             self.zoomed_image = ImageTk.PhotoImage(image=zoomed_img)
-            canvas_idx = len(displayed_faces) - 1
+            canvas_idx = i
             self.face_canvases[canvas_idx].create_image(0, 0, anchor=NW, image=self.zoomed_image)
             self.face_canvases[canvas_idx].image = self.zoomed_image
 
@@ -302,7 +317,7 @@ class AssignNamesGUI:
 
         self.window.destroy()
         ThirdGUI(self.video_path, self.number_people, self.transcriptions, self.names, self.all_faces)
-
+        
 class ThirdGUI:
     def __init__(self, video_path, number_people, transcriptions, names, all_faces):
         self.window = tk.Tk()
