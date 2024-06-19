@@ -6,10 +6,19 @@ This project aimed to develop an AI program to automatically generate transcript
 
 - [Installation](#installation)
 - [Usage](#usage)
-- [References](#contributing)
+  - [Processing a Video](#processing-a-video)
+  - [Understanding the Output](#understanding-the-output)
+- [References](#references)
 - [License](#license)
-
 ## Installation
+
+**Clone the repository**
+
+```bash
+git clone https://github.com/RBin789/multi-person-video-transcription.git
+```
+
+**Install Dependencies:**
 
 To install the necessary dependencies, you can use the package manager pip. Run the following command in your terminal:
 
@@ -18,6 +27,8 @@ pip install -r requirements-new.txt
 ```
 
 This will install all the required packages listed in the `requirements-new.txt` file.
+
+**Run The Project:**
 
 Once the installation is complete, you can run the project using the following command:
 
@@ -34,25 +45,25 @@ That's it! You're ready to use the Multi Person Video2Transcript program. Enjoy!
 To process a video you will need a video and the number of people who appear in the video.  Here are the steps:
 
 1. Start the program
-2. Select the video you want to process using the open video button
+2. Select the video you want to process using the "Open Video" button
 3. Put in the number of unqiue people who appear in the video
-4. Press start and watch the program process the video
+4. Press "Start" and watch the program process the video
 
 ### Understanding the Output
 
-Once the video has finshed processing two things are created:
+After processing, the program generates two outputs:
 
 #### Annotated Video
 
-The first is an annotated video that contains the bounding boxs, keypoints and labels for each person plotted on top of the original video below is an example frame.
+An annotated video with bounding boxes, keypoints, and labels for each person is created. Here is an example frame:
 
 ![Annotated video frame example](./images/multi-person-video-annotated.png)
    
-There are several things to take note of in the image:
+Key elements in the image:
 
-1. **Bounding Box**: There is a bounding box around each face and the colour of the box represents weather the program thinks the person is talking or not (Green = Not talking, Red = Talking).
+1. **Bounding Box**: Each face is surrounded by a bounding box and the colour of the box represents weather the program thinks the person is talking or not (Green = Not talking, Red = Talking).
 2. **Key Points**: There are 68 keypoints plotted on each face.
-3. **Label**: This is who the program thinks this person is.  This is important for the transcript
+3. **Label**: The program's prediction of the person's identity, which is crucial for the transcript.
 
 #### Text Transcript
 
