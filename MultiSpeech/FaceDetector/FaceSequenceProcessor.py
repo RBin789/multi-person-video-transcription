@@ -41,7 +41,7 @@ class FaceSequenceProcessor:
         self.create_annotated_video(all_faces, self.all_sequences, self.current_time)
 
     def find_max_lip_sep_per_frame(self, all_faces, num_of_frames):
-        """Create a List of the maximum lip seperation for each frame in the video."""
+        """Create a List of the maximum lip separation for each frame in the video."""
 
         for frame in range(1, num_of_frames + 1): 
             max_lip_sep = 0
@@ -103,7 +103,7 @@ class FaceSequenceProcessor:
 
         # Create a list of the clustered data
         for item in all_faces:
-            clustered_data.append([item.get_face_vector(), item.get_frame_number(), item.get_lip_seperation(), item.get_label()])               
+            clustered_data.append([item.get_face_vector(), item.get_frame_number(), item.get_lip_separation(), item.get_label()])               
         
         # Plotting the clusters
         # plt.scatter(vector_array[:, 0], vector_array[:, 1], c=cluster_labels, cmap='viridis')

@@ -47,10 +47,10 @@ def process_video(video_path):
         face_features = face2vec.get_face_features()
 
         for faceid, face_features in enumerate(face_features):
-            face = Face(face_features[0], face_features[1], face_features[2], face_features[3], face_features[4]) # Create a new person object (face vector, frame number, lip_seperation, bounding_box, face_coordinates)
+            face = Face(face_features[0], face_features[1], face_features[2], face_features[3], face_features[4]) # Create a new person object (face vector, frame number, lip_separation, bounding_box, face_coordinates)
             all_faces.append(face)
             print("face: " + str(faceid))
-            print("lipSep: " + str(face.get_lip_seperation()))
+            print("lipSep: " + str(face.get_lip_separation()))
             print("boundBox: " + str(face.get_bounding_box()))
             print()
         
@@ -71,7 +71,6 @@ class GUI:
         self.output_video_path = None
         self.number_people = None
         self.transcriptions = []
-        self.playing = False
         self.run_gui()
 
     def run_gui(self):
@@ -126,7 +125,6 @@ class GUI:
     def BtnOpen_Clicked(self):
         filetypes = [("Video files", "*.mp4")]
         file_path = filedialog.askopenfilename(filetypes=filetypes)
-        print(file_path)
 
         if file_path:
             self.selected_file = file_path
@@ -190,8 +188,6 @@ def main():
 
     gui = GUI()
 
-    print("Number of Face Vectors: ", len(all_faces))
-    print("Total Time taken: ", time.monotonic() - total_time)
-    
+
 if __name__ == "__main__":
     main()

@@ -43,12 +43,10 @@ class CreateProcessedVideo:
         processed_video.write_videofile(self.video_path[:-4] + "_annotated_" + str(self.current_time) + ".mp4", codec='libx264')
 
     def draw_bounding_box(self, frame, bounding_box, face_coordinates, talking, label):
-        """Draw the bounding box around the face and the face landmarks."""
-
         frame = Image.fromarray(frame)
         draw = ImageDraw.Draw(frame)
         label = "Person: " + str(label)
-        
+
         self.draw_text(draw, (self.video_width - 200), 20, "Frame: " + str(self.current_frame_num), (255, 0, 0)) # Draw frame counter
 
         x1, y1, x2, y2 = bounding_box
