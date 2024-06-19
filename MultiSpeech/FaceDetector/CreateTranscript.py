@@ -14,20 +14,23 @@ class WordInfo:
     self.person_talking = person_talking
 
 class CreateTranscript:
-    def __init__(self, selected_video_file, persons):
+    def __init__(self, selected_video_file, persons, current_time):
         self.selected_video_file = selected_video_file
         self.persons = persons
+        self.current_time = current_time
         self.frame_rate = 25
         self.selected_audio_file = None
         self.vosk_model_path = "MultiSpeech/FaceDetector/models/vosk-model-small-en-us-0.15"
         self.wordTranscriptList = []
         self.final_transcript = []
+        self.transcript_path = None
 
         self.extractAndConvertAudio(self.selected_video_file)
         self.createWordDict(self.persons, self.selected_audio_file, self.vosk_model_path)
         self.decideFinalResults(self.wordTranscriptList)
         self.final_transcript = self.createTranscript(self.wordTranscriptList)
-        self.print(self.final_transcript)
+        self.create_transcript_txt_file(self.final_transcript, self.current_time)
+        # self.print(self.final_transcript)
     
     def extractAndConvertAudio(self, selected_video_file):
         """Extract audio from the video and convert it to a format that Vosk can use."""
@@ -52,9 +55,6 @@ class CreateTranscript:
 
     def createWordDict(self, persons, selected_audio_file, vosk_model_path):
         """Create a dictionary of words and their start and end times from the audio file using Vosk."""
-
-        # print(f"Using Vosk model at {vosk_model_path}")
-        # print(f"Processing audio file {selected_audio_file}")
 
         with wave.open(selected_audio_file, "rb") as wf:
             
@@ -104,10 +104,6 @@ class CreateTranscript:
             self.processResults(results_dict, persons)
         
         os.remove(selected_audio_file) # Remove the audio file after processing
-        
-        # print(f"Length of results_dict: {len(results_dict)}")
-        # for word_info in results_dict:
-        #     print(f"Word: {word_info['word']}, Start: {word_info['start']}, End: {word_info['end']}, Confidence: {word_info['confidence']}")
 
     def processResults(self, results_dict, persons):
         """Process the results from Vosk and create a list of WordInfo objects."""
@@ -194,7 +190,26 @@ class CreateTranscript:
 
         return '\n'.join(formatted_transcript)    
 
+    def create_transcript_txt_file(self, final_transcript, current_time):
+        """Create a .txt file and save the final transcript to the same location as the video file."""
+        
+        video_file_path = self.selected_video_file
+        transcript_file_path = video_file_path[:-4] + "_transcript_" + current_time + ".txt"
+        
+        with open(transcript_file_path, "w") as file:
+            file.write(final_transcript) # Write the final transcript to the file
+        
+        print(f"Transcript saved to {transcript_file_path}")
+
+        self.transcript_path = transcript_file_path
+    
+    def get_transcript_path(self):
+        """Return the path of the transcript file."""
+
+        return self.transcript_path
+    
     def print(self, final_transcript):
+        """Print the final transcript to the console."""
         
         print(final_transcript)
 
