@@ -26,7 +26,6 @@ class Face2Vec:
         self.face_features = []
         self.lip_seperation = []
         self.enforced_face_frame_height = 480 # This is the enforced height of a face frame.
-        self.min_lip_threshold = 0.005 # This is the minimum lip threshold for the lip seperation
         
         self.detect_faces()
         self.detect_keypoints()
@@ -76,21 +75,35 @@ class Face2Vec:
     def calculate_Lip_Seperation(self, keypoints):
         """Calculates the distance between the top and bottom lip"""
 
+        point50 = keypoints[50] # To understand the points see the following link: https://github.com/sachinsdate/lip-movement-net/tree/master
+        point58 = keypoints[58]
+        difference1 = abs(point50[1] - point58[1])
+
+        point51 = keypoints[51]
+        point57 = keypoints[57]
+        difference2 = abs(point51[1] - point57[1])
+
+        point52 = keypoints[52]
+        point56 = keypoints[56]
+        difference3 = abs(point52[1] - point56[1])
+    
+        outer_avg_distance = (difference1 + difference2 + difference3) / 3
+
         point61 = keypoints[61] # To understand the points see the following link: https://github.com/sachinsdate/lip-movement-net/tree/master
         point67 = keypoints[67]
-        difference1 = abs(point61[1] - point67[1])
+        difference4 = abs(point61[1] - point67[1])
 
         point62 = keypoints[62]
         point66 = keypoints[66]
-        difference2 = abs(point62[1] - point66[1])
+        difference5 = abs(point62[1] - point66[1])
 
         point63 = keypoints[63]
         point65 = keypoints[65]
-        difference3 = abs(point63[1] - point65[1])
+        difference6 = abs(point63[1] - point65[1])
 
-        avg_distance = (difference1 + difference2 + difference3) / 3
+        inner_avg_distance = (difference4 + difference5 + difference6) / 3
         
-        return avg_distance
+        return (outer_avg_distance, inner_avg_distance)
 
     def detect_keypoints(self):
         """For self.face_keypoints data is stored in the form [(68 points), (68 points), (68 points)] every entry is a face"""  
@@ -118,11 +131,7 @@ class Face2Vec:
                 height_of_face = max_point[1] - min_point[1]
                 face_height_scaling = self.enforced_face_frame_height/height_of_face  # This is to ensure that the lip seperation is the same for all face frame sizes
                 
-                lip_sepration = self.calculate_Lip_Seperation(landmarks) * face_height_scaling # Scale the lip seperation based on the face height
-                
-                # If the lip seperation is less than the threshold, set it to 0
-                if (lip_sepration / height_of_face) < self.min_lip_threshold:
-                    lip_sepration = 0
+                lip_sepration = (self.calculate_Lip_Seperation(landmarks)[0] * face_height_scaling, self.calculate_Lip_Seperation(landmarks)[1] * face_height_scaling) # Scale the lip seperation based on the face height
                 
                 print("Face Height: ", height_of_face)
                 print ("Orig Lip Seperation: ", self.calculate_Lip_Seperation(landmarks))
