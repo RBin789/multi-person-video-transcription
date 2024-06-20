@@ -148,8 +148,11 @@ class CreateTranscript:
                 else: 
                     word.person_talking = wordTranscriptList[word_index - 1].person_talking # Set the person talking to the person talking in the previous word
             
-            else: 
-                word.person_talking = wordTranscriptList[word_index - 1].person_talking # Set the person talking to the person talking in the previous word
+            else:
+                try:
+                    word.person_talking = wordTranscriptList[word_index - 1].person_talking # Set the person talking to the person talking in the previous word
+                except:
+                    word.person_talking = "Unknown" # If there is no previous word, set the person talking to "Unknown"
 
     def createTranscript(self, wordTranscriptList):
         """Create a formatted transcript from the list of WordInfo objects."""
