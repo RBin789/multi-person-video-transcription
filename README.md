@@ -26,8 +26,8 @@ To install the necessary dependencies, you can use the package manager pip. Run 
 pip install -r requirements-A3v2.txt
 ```
 
-This will install all the required packages listed in the `requirements-new.txt` file.
-**Note:** This project uses the library dlib so you will need the C Compiler and CMake
+This will install all the required packages listed in the `requirements-A3v2.txt` file.  
+**Note:** This project uses the library dlib so you will need the C Compiler and CMake  
 
 **Run The Project:**
 
