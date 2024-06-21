@@ -23,10 +23,11 @@ git clone https://github.com/RBin789/multi-person-video-transcription.git
 To install the necessary dependencies, you can use the package manager pip. Run the following command in your terminal:
 
 ```bash
-pip install -r requirements-new.txt
+pip install -r requirements-A3v2.txt
 ```
 
 This will install all the required packages listed in the `requirements-new.txt` file.
+**Note:** This project uses the library dlib so you will need the C Compiler and CMake
 
 **Run The Project:**
 
@@ -93,4 +94,4 @@ yeah i mean just to think about that and then
 
 ## License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+Distributed under the MIT License.
