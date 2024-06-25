@@ -90,7 +90,12 @@ yeah i mean just to think about that and then
 
 ### Examples
 
-You can find pre-processed examples at MultiSpeech/videos/example-preprocesed-videos
+You can find pre-processed examples video below:
+[Example Video 1](https://youtu.be/TrefDwe9ZKw)
+[Exmaple Video 2](https://youtu.be/eW9IAmk2eWM)
+
+and the video files in this folder MultiSpeech/videos/example-preprocesed-videos
+
 
 ## References
 
