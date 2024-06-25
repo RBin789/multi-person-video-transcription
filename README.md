@@ -90,7 +90,7 @@ yeah i mean just to think about that and then
 
 ### Examples
 
-You can find pre-processed examples video below:  
+You can find pre-processed examples video below (The transcripts are in the description):  
 - [Example Video 1](https://youtu.be/TrefDwe9ZKw)  
 - [Example Video 2](https://youtu.be/eW9IAmk2eWM)
 
