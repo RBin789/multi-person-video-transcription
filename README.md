@@ -8,6 +8,7 @@ This project aimed to develop an AI program to automatically generate transcript
 - [Usage](#usage)
   - [Processing a Video](#processing-a-video)
   - [Understanding the Output](#understanding-the-output)
+  - [Examples](#Examples)
 - [References](#references)
 - [License](#license)
 ## Installation
@@ -87,7 +88,7 @@ Time 1450 to 1498 - Person 2:
 yeah i mean just to think about that and then
 ```
 
-### Exmaples
+### Examples
 
 You can find pre-processed examples at MultiSpeech/videos/example-preprocesed-videos
 
