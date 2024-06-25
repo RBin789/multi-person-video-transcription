@@ -4,10 +4,12 @@ from PIL import Image, ImageDraw, ImageFont
 from datetime import datetime
 
 class CreateProcessedVideo:
-    def __init__(self, video_path, all_faces, all_sequences):
+    def __init__(self, video_path, all_faces, all_sequences, current_time):
         self.video_path = video_path
         self.all_faces = all_faces
         self.all_sequences = all_sequences
+        self.current_time = current_time
+        self.annotated_video_path = None
         self.current_frame_num = 0
         self.video_width = 0
         self.video_height = 0
@@ -35,17 +37,18 @@ class CreateProcessedVideo:
 
             return frame
         
-        # Create a new video with the processed frames
-        current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         processed_video = video.fl(process_frame)
-        processed_video.write_videofile(self.video_path + "_modified.mp4", codec='libx264')
-        processed_video.write_videofile(self.video_path + "_annotated_" + current_time + ".mp4", codec='libx264')
+        # processed_video.write_videofile(self.video_path + "_modified.mp4", codec='libx264')
+        self.annotated_video_path = self.video_path[:-4] + "_annotated_" + str(self.current_time) + ".mp4"
+        processed_video.write_videofile(self.video_path[:-4] + "_annotated_" + str(self.current_time) + ".mp4", codec='libx264')
 
     def draw_bounding_box(self, frame, bounding_box, face_coordinates, talking, label):
+        """Draw the bounding box around the face and the face landmarks."""
+
         frame = Image.fromarray(frame)
         draw = ImageDraw.Draw(frame)
         label = "Person: " + str(label)
-
+        
         self.draw_text(draw, (self.video_width - 200), 20, "Frame: " + str(self.current_frame_num), (255, 0, 0)) # Draw frame counter
 
         x1, y1, x2, y2 = bounding_box
@@ -86,5 +89,10 @@ class CreateProcessedVideo:
             font = ImageFont.truetype("arial.ttf", 30)
             draw.text((x, y), label, fill=color, font=font)
         except Exception as e:
-            # print(f"Error loading font: {e}")
+            print(f"Error loading font: {e}")
             draw.text((x, y), label, fill=color)
+
+    def get_annotated_video_path(self):
+        """Return the path to the annotated video."""
+
+        return self.annotated_video_path

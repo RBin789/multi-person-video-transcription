@@ -15,5 +15,3 @@ class Person:
     
     def get_faces(self):
         return self.faces
-    
-    

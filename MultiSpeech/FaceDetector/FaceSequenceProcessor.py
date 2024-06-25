@@ -11,42 +11,53 @@ from FaceDetector.CreateProcessedVideo import *
 
 class FaceSequenceProcessor:
     
-    def __init__(self, all_faces, num_people, lip_detection_model, selected_file, num_of_frames):
+    def __init__(self, all_faces, num_people, lip_detection_model, selected_file, num_of_frames, current_time):
         self.all_faces = all_faces
         self.num_people = num_people
         self.lip_detection_model = lip_detection_model
         self.selected_file = selected_file
         self.num_of_frames = num_of_frames
+        self.current_time = current_time
+        self.annotated_video_path = None
 
         self.persons = []
         self.all_sequences = []
-        self.all_lip_separations = []
+        self.max_lip_seperations_outer = []
+        self.max_lip_seperations_inner = []
 
-        self.run_functions(all_faces)
+        self.run_functions(self.all_faces)
 
     def run_functions(self, all_faces):
         self.find_max_lip_sep_per_frame(all_faces, self.num_of_frames)
         
         clustered_data = self.peform_kmeans_clustering(all_faces, self.num_people)
         clustered_by_label = self.split_data_by_cluster(clustered_data)
-        self.process_clustered_data(clustered_by_label, self.lip_detection_model, self.all_lip_separations)
+        self.process_clustered_data(clustered_by_label, self.lip_detection_model, self.max_lip_seperations_outer, self.max_lip_seperations_inner)
         self.sort_Detected_Sequences()
 
         self.update_faces()
         self.create_persons(self.num_people)
         self.print_sequences()
-        self.create_annotated_video(all_faces, self.all_sequences)
+        self.create_annotated_video(all_faces, self.all_sequences, self.current_time)
 
     def find_max_lip_sep_per_frame(self, all_faces, num_of_frames):
-        """Create a List of the maximum lip separation for each frame in the video."""
+        """Create a List of the maximum lip seperation for each frame in the video."""
 
         for frame in range(1, num_of_frames + 1): 
             max_lip_sep = 0
             for face_num, face in enumerate(all_faces):
                 if face.get_frame_number() == frame:
-                    if face.get_lip_separation() > max_lip_sep:
-                        max_lip_sep = face.get_lip_separation()
-            self.all_lip_separations.append(max_lip_sep)
+                    if face.get_lip_seperation()[0] > max_lip_sep:
+                        max_lip_sep = face.get_lip_seperation()[0]
+            self.max_lip_seperations_outer.append(max_lip_sep)
+
+        for frame in range(1, num_of_frames + 1): 
+            max_lip_sep = 0
+            for face_num, face in enumerate(all_faces):
+                if face.get_frame_number() == frame:
+                    if face.get_lip_seperation()[1] > max_lip_sep:
+                        max_lip_sep = face.get_lip_seperation()[1]
+            self.max_lip_seperations_inner.append(max_lip_sep)
 
     def peform_kmeans_clustering(self, all_faces, num_people):
         """Perform KMeans clustering on the face vectors & assign labels to the faces."""
@@ -92,7 +103,7 @@ class FaceSequenceProcessor:
 
         # Create a list of the clustered data
         for item in all_faces:
-            clustered_data.append([item.get_face_vector(), item.get_frame_number(), item.get_lip_separation(), item.get_label()])               
+            clustered_data.append([item.get_face_vector(), item.get_frame_number(), item.get_lip_seperation(), item.get_label()])               
         
         # Plotting the clusters
         # plt.scatter(vector_array[:, 0], vector_array[:, 1], c=cluster_labels, cmap='viridis')
@@ -115,23 +126,28 @@ class FaceSequenceProcessor:
         
         return clustered_by_label # A dictionary where keys are cluster labels and values are lists of data points belonging to that cluster.
 
-    def process_clustered_data(self, clustered_by_label, lip_detection_model, all_lip_separations):
+    def process_clustered_data(self, clustered_by_label, lip_detection_model, max_lip_seperations_outer, max_lip_seperations_inner):
         """Process the clustered data by running the lip detection on each cluster."""
         
         for cluster_label, cluster_data in clustered_by_label.items():
             sequence_generation = Sequence_Generation(cluster_label, cluster_data) # Generate all of one persons sequences
             person_sequences = sequence_generation.get_person_sequences() # Get all of one persons sequences
             
-            self.run_lip_detection(person_sequences, cluster_label, lip_detection_model, all_lip_separations) 
+            self.run_lip_detection(person_sequences, cluster_label, lip_detection_model, max_lip_seperations_outer, max_lip_seperations_inner) 
 
-    def run_lip_detection(self, person_sequences, cluster_label, lip_detection_model, all_lip_separations):
+    def run_lip_detection(self, person_sequences, cluster_label, lip_detection_model, max_lip_seperations_outer, max_lip_seperations_inner):
         """Run the lip detection on each sequence of a person."""
 
         for i, sequence in enumerate(person_sequences):
             if (len(sequence) == 0):
                 continue
-            lip_detection = Lip_Detection(sequence, cluster_label, lip_detection_model, all_lip_separations) 
-            self.all_sequences.append(lip_detection.get_sequence_and_prediction()) # Append the sequence and prediction to the list of all sequences
+            lip_detection_outer = Lip_Detection(sequence, cluster_label, lip_detection_model, max_lip_seperations_outer, lip_index=0)
+            lip_detection_inner = Lip_Detection(sequence, cluster_label, lip_detection_model, max_lip_seperations_inner, lip_index=1)
+            
+            if (lip_detection_outer.get_sequence_and_prediction()[2] == 1):
+                self.all_sequences.append(lip_detection_outer.get_sequence_and_prediction()) # Append the sequence and prediction to the list of all sequences
+            else:
+                self.all_sequences.append(lip_detection_inner.get_sequence_and_prediction())
 
     def sort_Detected_Sequences(self):
         """Sort the detected sequences by frame number."""
@@ -166,12 +182,18 @@ class FaceSequenceProcessor:
         for sequence in self.all_sequences:
             print(sequence)
 
-    def create_annotated_video(self, all_faces, all_sequences):
+    def create_annotated_video(self, all_faces, all_sequences, current_time):
         """Create a video with the detected sequences annotated."""
         
-        create_processed_video = CreateProcessedVideo(self.selected_file, all_faces, all_sequences)
+        create_processed_video = CreateProcessedVideo(self.selected_file, all_faces, all_sequences, current_time)
+        self.annotated_video_path = create_processed_video.annotated_video_path
 
     def get_persons(self):
         """Return the list of Person objects."""
 
         return self.persons
+    
+    def get_annotated_video_path(self):
+        """Return the path to the annotated video."""
+
+        return self.annotated_video_path
